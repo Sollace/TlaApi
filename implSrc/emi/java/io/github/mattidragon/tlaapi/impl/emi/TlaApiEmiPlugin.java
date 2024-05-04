@@ -85,7 +85,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
                     var stacks = ingredient.getEmiStacks();
                     if (stacks.isEmpty()) return false;
-                    var stack = EmiUtils.convertStack(stacks.get(0));
+                    var stack = EmiUtils.convertStack(stacks.getFirst());
 
                     var targets = handler.getDropTargets(screen);
                     for (StackDragHandler.DropTarget target : targets) {

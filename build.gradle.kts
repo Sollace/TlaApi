@@ -1,7 +1,7 @@
 import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 
 plugins {
-    id("fabric-loom") version "1.4-SNAPSHOT"
+    id("fabric-loom") version "1.6-SNAPSHOT"
     id("maven-publish")
 }
 
@@ -102,7 +102,7 @@ dependencies {
     add("modReiCompileOnly", libs.rei.plugin.default)
     // For some reason arch isn't a transitive dependency of rei-api, so we need to manually add it to use a few classes
     add("modReiCompileOnly", libs.rei.architectury)
-    add("modReiCompileOnly", libs.rei.math)
+//    add("modReiCompileOnly", libs.rei.math)
     add("modReiCompileOnly", libs.rei.config)
     add("modReiRuntimeOnly", libs.rei.all)
 
@@ -122,14 +122,14 @@ tasks.processResources  {
 }
 
 tasks.withType<JavaCompile> {
-    options.release = 17
+    options.release = 21
 }
 
 java {
     withSourcesJar()
 
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.jar {
