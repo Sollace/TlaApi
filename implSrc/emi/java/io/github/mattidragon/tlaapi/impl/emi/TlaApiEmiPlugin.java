@@ -10,12 +10,14 @@ import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
@@ -77,6 +79,16 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
+        public <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> tTlaBoundsFunction) {
+            // Emi doesn't provide this feature
+        }
+
+        @Override
+        public <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> tTlaBoundsFunction) {
+            // Emi doesn't provide this feature
+        }
+
+        @Override
         public <T extends Screen> void addStackDragHandler(Class<T> clazz, StackDragHandler<T> handler) {
             registry.addDragDropHandler(clazz, new EmiDragDropHandler<T>() {
                 @Override
@@ -119,6 +131,11 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                     consumer.accept(bounds);
                 }
             });
+        }
+
+        @Override
+        public RecipeViewer getActiveViewer() {
+            return RecipeViewer.EMI;
         }
 
         @Override

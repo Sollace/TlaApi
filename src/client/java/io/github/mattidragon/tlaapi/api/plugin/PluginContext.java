@@ -8,6 +8,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -48,6 +49,28 @@ public interface PluginContext {
     void addGenerator(Function<MinecraftClient, List<TlaRecipe>> generator);
 
     /**
+     * Adds an area which can be clicked to open a category if the recipe viewer supports it.
+     * The bounds are based on screen coordinates. To use handled screen coordinates use {@link #addScreenHandlerClickArea}.
+     * @param clazz The class of the screen for which this applies.
+     * @param category The category which should be opened.
+     * @param boundsFunction The function that supplies the bounds.
+     * @see #addScreenHandlerClickArea(Class, TlaCategory, Function)
+     * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
+     */
+    <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
+
+    /**
+     * Adds an area which can be clicked to open a category if the recipe viewer supports it.
+     * The bounds are based on handled screen coordinates based on the reported screen size. For non-handled screens, see {@link #addClickArea}.
+     * @param clazz The class of the screen for which this applies.
+     * @param category The category which should be opened.
+     * @param boundsFunction The function that supplies the bounds.
+     * @see #addClickArea(Class, TlaCategory, Function)
+     * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
+     */
+    <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
+
+    /**
      * Adds a stack drag handler for a given screen type.
      * Stack drag handlers are used to handle dragging stacks from the recipe viewer to a screen,
      * usually for setting filters or similar things.
@@ -70,4 +93,9 @@ public interface PluginContext {
      * This prevents recipe viewers from extending onto areas of the screen.
      */
     <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider);
+
+    /**
+     * Provides users of TLA-api knowledge of which recipe viewer invoked the plugin.
+     */
+    RecipeViewer getActiveViewer();
 }
