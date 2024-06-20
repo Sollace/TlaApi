@@ -121,15 +121,11 @@ tasks.processResources  {
     }
 }
 
-tasks.withType<JavaCompile> {
-    options.release = 21
-}
-
 java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
     withSourcesJar()
-
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.jar {
@@ -142,7 +138,6 @@ publishing {
     publications {
         register<MavenPublication>("mavenJava") {
             from(components["java"])
-            artifact(tasks["sourcesJar"])
         }
     }
 
