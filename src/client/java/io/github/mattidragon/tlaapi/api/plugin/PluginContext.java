@@ -52,11 +52,13 @@ public interface PluginContext {
     /**
      * Adds an area which can be clicked to open a category if the recipe viewer supports it.
      * The bounds are based on screen coordinates. To use handled screen coordinates use {@link #addScreenHandlerClickArea}.
+     * It should also be preferred whenever possible due to better compatibility.
      * @param clazz The class of the screen for which this applies.
      * @param category The category which should be opened.
      * @param boundsFunction The function that supplies the bounds.
      * @see #addScreenHandlerClickArea(Class, TlaCategory, Function)
      * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
+     * <br>JEI doesn't provide the ability to add click areas to non-handled screens, as such this method won't work there.
      */
     <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
 

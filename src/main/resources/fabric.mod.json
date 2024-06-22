@@ -7,6 +7,9 @@
   "authors": [
     "MattiDragon"
   ],
+  "contributors": [
+    "Sollace"
+  ],
   "contact": {
     "homepage": "https://github.com/MattiDragon/TlaApi",
     "sources": "https://github.com/MattiDragon/TlaApi",
@@ -22,6 +25,9 @@
     ],
     "rei_client": [
       "io.github.mattidragon.tlaapi.impl.rei.TlaApiReiPlugin"
+    ],
+    "jei_mod_plugin": [
+      "io.github.mattidragon.tlaapi.impl.jei.TlaApiJeiPlugin"
     ]
   },
   "depends": {

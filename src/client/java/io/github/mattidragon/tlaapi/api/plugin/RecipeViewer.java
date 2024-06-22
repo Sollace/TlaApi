@@ -9,9 +9,6 @@ import java.util.Locale;
 public final class RecipeViewer {
     public static final RecipeViewer EMI = new RecipeViewer("emi");
     public static final RecipeViewer REI = new RecipeViewer("rei");
-    /**
-     * @apiNote Currently no JEI support is provided, however it may be added in the future.
-     */
     public static final RecipeViewer JEI = new RecipeViewer("jei");
 
     private final String id;
