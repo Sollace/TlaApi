@@ -2,14 +2,19 @@ package io.github.mattidragon.tlaapi.impl.rei;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
+import dev.architectury.fluid.FluidStack;
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
+import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaDragHandler;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaExclusionZoneProvider;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaScreenSizeProvider;
@@ -20,11 +25,19 @@ import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 import me.shedaniel.rei.api.client.registry.screen.ExclusionZones;
 import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import me.shedaniel.rei.api.client.registry.screen.SimpleClickArea;
+import me.shedaniel.rei.api.common.entry.comparison.EntryComparator;
+import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
+import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
 import me.shedaniel.rei.api.common.plugins.PluginManager;
 import me.shedaniel.rei.api.common.registry.ReloadStage;
+import mezz.jei.api.fabric.constants.FabricTypes;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -43,7 +56,27 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     private final List<TlaScreenSizeProvider<?>> screenSizeProviders = new ArrayList<>();
     private final List<TlaExclusionZoneProvider<?>> exclusionZoneProviders = new ArrayList<>();
     private final List<ClickAreaTuple<?>> clickAreas = new ArrayList<>();
+    private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
+    private final List<Comparator<Fluid, FluidStack>> fluidComparators = new ArrayList<>();
 
+    private final Comparisons<ItemConvertible> itemComparisons = new Comparisons<>() {
+        @Override
+        public void register(ItemConvertible item, TlaStackComparison comparison) {
+            itemComparators.add(new Comparator<>(item.asItem(), (context, stack) -> {
+                return comparison.hashFunction().hash(TlaStack.of(stack));
+            }));
+        }
+
+    };
+    private final Comparisons<Fluid> fluidComparisons = new Comparisons<>() {
+        @Override
+        public void register(Fluid fluid, TlaStackComparison comparison) {
+            fluidComparators.add(new Comparator<>(fluid, (context, stack) -> {
+                return comparison.hashFunction().hash(ReiUtil.convertStack(stack));
+            }));
+        }
+    };
+    
     @Override
     public void preStage(PluginManager<REIClientPlugin> manager, ReloadStage stage) {
         // REI doesn't have a good reload start event, so we have to do this
@@ -122,6 +155,16 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     @Override
+    public void registerItemComparators(ItemComparatorRegistry registry) {
+        itemComparators.forEach(comparator -> registry.register(comparator.comparator(), comparator.key()));
+    }
+
+    @Override
+    public void registerFluidComparators(FluidComparatorRegistry registry) {
+        fluidComparators.forEach(comparator -> registry.register(comparator.comparator(), comparator.key()));
+    }
+
+    @Override
     public void addCategory(TlaCategory category) {
         categories.put(category, new TlaDisplayCategory(category));
     }
@@ -171,6 +214,16 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     @Override
+    public Comparisons<ItemConvertible> getItemComparisons() {
+        return itemComparisons;
+    }
+
+    @Override
+    public Comparisons<Fluid> getFluidComparisons() {
+        return fluidComparisons;
+    }
+
+    @Override
     public RecipeViewer getActiveViewer() {
         return RecipeViewer.REI;
     }
@@ -180,6 +233,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
         return "REI plugin handler";
     }
 
+    private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
     private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {}
     private record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
 

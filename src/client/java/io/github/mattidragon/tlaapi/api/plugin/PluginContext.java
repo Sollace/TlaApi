@@ -9,6 +9,8 @@ import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -96,6 +98,16 @@ public interface PluginContext {
      * This prevents recipe viewers from extending onto areas of the screen.
      */
     <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider);
+
+    /**
+     * Gets a registry used for registering the default comparisons for items and blocks.
+     */
+    Comparisons<ItemConvertible> getItemComparisons();
+
+    /**
+     * Gets a registry used for registering the default comparisons for fluids.
+     */
+    Comparisons<Fluid> getFluidComparisons();
 
     /**
      * Provides users of TLA-api knowledge of which recipe viewer invoked the plugin.

@@ -3,6 +3,7 @@ package io.github.mattidragon.tlaapi.api.recipe;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.minecraft.component.ComponentChanges;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
@@ -96,6 +97,8 @@ public sealed abstract class TlaStack {
         return TlaIngredient.ofStacks(this);
     }
 
+    public abstract ComponentChanges getComponents();
+
     public static final class TlaFluidStack extends TlaStack {
         private final FluidVariant fluid;
 
@@ -126,6 +129,11 @@ public sealed abstract class TlaStack {
 
         public Fluid getFluid() {
             return fluid.getFluid();
+        }
+
+        @Override
+        public ComponentChanges getComponents() {
+            return fluid.getComponents();
         }
 
         @Override
@@ -185,6 +193,11 @@ public sealed abstract class TlaStack {
 
         public ItemStack toStack() {
             return item.toStack((int) amount);
+        }
+
+        @Override
+        public ComponentChanges getComponents() {
+            return item.getComponents();
         }
 
         @Override

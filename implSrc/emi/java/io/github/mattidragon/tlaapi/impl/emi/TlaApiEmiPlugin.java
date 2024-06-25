@@ -4,20 +4,25 @@ import dev.emi.emi.api.EmiDragDropHandler;
 import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
+import dev.emi.emi.api.stack.Comparison;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.widget.Bounds;
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
+import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
@@ -37,6 +42,9 @@ public class TlaApiEmiPlugin implements EmiPlugin {
     private static final class EmiImplementation implements PluginContext {
         private final EmiRegistry registry;
         private final Map<TlaCategory, EmiRecipeCategory> categories = new HashMap<>();
+
+        private final Comparisons<ItemConvertible> itemComparisons = new EmiComparisons<>();
+        private final Comparisons<Fluid> fluidComparisons = new EmiComparisons<>();
 
         private EmiImplementation(EmiRegistry registry) {
             this.registry = registry;
@@ -133,6 +141,16 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
+        public Comparisons<ItemConvertible> getItemComparisons() {
+            return itemComparisons;
+        }
+
+        @Override
+        public Comparisons<Fluid> getFluidComparisons() {
+            return fluidComparisons;
+        }
+
+        @Override
         public RecipeViewer getActiveViewer() {
             return RecipeViewer.EMI;
         }
@@ -140,6 +158,16 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         @Override
         public String toString() {
             return "EMI plugin handler";
+        }
+
+        private class EmiComparisons<T> implements Comparisons<T> {
+            @Override
+            public void register(T key, TlaStackComparison comparison) {
+                registry.setDefaultComparison(key, Comparison.of(
+                        (a, b) -> comparison.predicate().compare(EmiUtils.convertStack(a), EmiUtils.convertStack(b)),
+                        stack -> comparison.hashFunction().hash(EmiUtils.convertStack(stack)))
+                );
+            }
         }
     }
 }

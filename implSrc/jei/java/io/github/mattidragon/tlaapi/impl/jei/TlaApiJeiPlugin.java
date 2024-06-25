@@ -4,14 +4,18 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
+import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.fabric.constants.FabricTypes;
 import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
@@ -21,10 +25,13 @@ import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.ISubtypeRegistration;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.Rect2i;
+import net.minecraft.fluid.Fluid;
+import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeManager;
@@ -34,6 +41,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,19 +56,39 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     private final List<GhostHandler<?>> ghostHandlers = new ArrayList<>();
     private final List<ScreenSizeProvider<?>> sizeProviders = new ArrayList<>();
     private final List<ExclusionZoneProvider<?>> exclusionZoneProviders = new ArrayList<>();
-    
+    private final List<Consumer<ISubtypeRegistration>> subTypeProviders = new ArrayList<>();
+
     private final Map<TlaCategory, TlaRecipeCategory> preparedCategories = new HashMap<>();
-    
+
+    private final Comparisons<ItemConvertible> itemComparisons = new Comparisons<>() {
+        @Override
+        public void register(ItemConvertible item, TlaStackComparison comparison) {
+            subTypeProviders.add(registration -> registration.registerSubtypeInterpreter(item.asItem(), (stack, context) -> {
+                return comparison.hashFunction().hash(TlaStack.of(stack)) + "";
+            }));
+        }
+
+    };
+    private final Comparisons<Fluid> fluidComparisons = new Comparisons<>() {
+        @Override
+        public void register(Fluid fluid, TlaStackComparison comparison) {
+            subTypeProviders.add(registration -> registration.registerSubtypeInterpreter(FabricTypes.FLUID_STACK, fluid, (fluidVariant, context) -> {
+                return comparison.hashFunction().hash(TlaStack.bucketOf(fluidVariant.getFluidVariant())) + "";
+            }));
+        }
+    };
+
     @Override
     public Identifier getPluginUid() {
         return Identifier.of("tla-api", "plugin");
     }
-    
+
     private void init() {
         categories.clear();
         recipeFunctions.clear();
         workstations.clear();
         preparedCategories.clear();
+        subTypeProviders.clear();
         PluginLoader.loadPlugins(this);
     }
 
@@ -68,7 +96,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     public void registerCategories(IRecipeCategoryRegistration registration) {
         // This is the earliest event, and we don't get anything before that.
         init();
-        
+
         for (var category : categories) {
             var jeiCategory = new TlaRecipeCategory(registration.getJeiHelpers(), category);
             preparedCategories.put(category, jeiCategory);
@@ -77,8 +105,13 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     }
 
     @Override
+    public void registerItemSubtypes(ISubtypeRegistration registration) {
+        subTypeProviders.forEach(provider -> provider.accept(registration));
+    }
+
+    @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-        workstations.forEach((category, workstations) -> 
+        workstations.forEach((category, workstations) ->
                 JeiUtils.convertIngredient(registration.getJeiHelpers(), workstations).forEach(workstation -> addCatalyst(registration, category, workstation)));
     }
 
@@ -112,7 +145,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
                     }
                 });
             }
-            
+
             <T extends Screen> void addSizeProvider(ScreenSizeProvider<T> provider) {
                 registration.addGuiScreenHandler(provider.clazz, screen -> {
                     var bounds = provider.provider.apply(screen);
@@ -201,7 +234,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
         sizeProviders.forEach(adders::addSizeProvider);
         exclusionZoneProviders.forEach(adders::addExclusionZoneProvider);
     }
-    
+
     @Override
     public void addCategory(TlaCategory category) {
         categories.add(category);
@@ -242,11 +275,22 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
         sizeProviders.add(new ScreenSizeProvider<>(clazz, provider));
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {
         if (!HandledScreen.class.isAssignableFrom(clazz)) return; // JEI only supports exclusion zones on handled screens
         //noinspection unchecked
         exclusionZoneProviders.add(new ExclusionZoneProvider<>((Class<HandledScreen<?>>) clazz, (Function<HandledScreen<?>, ? extends Iterable<TlaBounds>>) provider));
+    }
+
+    @Override
+    public Comparisons<ItemConvertible> getItemComparisons() {
+        return itemComparisons;
+    }
+
+    @Override
+    public Comparisons<Fluid> getFluidComparisons() {
+        return fluidComparisons;
     }
 
     @Override
