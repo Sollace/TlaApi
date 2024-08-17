@@ -30,7 +30,6 @@ import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
 import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
 import me.shedaniel.rei.api.common.plugins.PluginManager;
 import me.shedaniel.rei.api.common.registry.ReloadStage;
-import mezz.jei.api.fabric.constants.FabricTypes;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -76,7 +75,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
             }));
         }
     };
-    
+
     @Override
     public void preStage(PluginManager<REIClientPlugin> manager, ReloadStage stage) {
         // REI doesn't have a good reload start event, so we have to do this
