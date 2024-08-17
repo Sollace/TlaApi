@@ -5,7 +5,7 @@ import java.util.function.Function;
 
 /**
  * A combined equality and hashing function for TlaStacks.
- * <p>
+ *
  * @see PluginContext#setDefaultComparison
  */
 public record TlaStackComparison(Predicate predicate, HashFunction hashFunction) {

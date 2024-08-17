@@ -1,7 +1,5 @@
 package io.github.mattidragon.tlaapi.api.plugin;
 
-import java.util.stream.Stream;
-
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 
 public interface Comparisons<T> {
@@ -17,7 +15,7 @@ public interface Comparisons<T> {
      * @param keys The keys for the object to compare.
      * @param comparison The comparison and hash function
      */
-    default void register(TlaStackComparison comparison, @SuppressWarnings("unchecked") T...keys) {
+    default void register(TlaStackComparison comparison, @SuppressWarnings("unchecked") T... keys) {
         for (T key : keys) {
             register(key, comparison);
         }
@@ -32,14 +30,5 @@ public interface Comparisons<T> {
         for (T key : keys) {
             register(key, comparison);
         }
-    }
-
-    /**
-     * Adds a default comparison method for a stack for its key.
-     * @param keys The keys for the object to compare.
-     * @param comparison The comparison and hash function
-     */
-    default void register(TlaStackComparison comparison, Stream<T> keys) {
-        keys.forEach(key -> register(key, comparison));
     }
 }
