@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.api.recipe;
 
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
@@ -8,7 +9,7 @@ import java.util.function.Function;
  *
  * @see PluginContext#setDefaultComparison
  */
-public record TlaStackComparison(Predicate predicate, HashFunction hashFunction) {
+public record TlaStackComparison(EqualityPredicate equalityPredicate, HashFunction hashFunction) {
     private static final TlaStackComparison COMPARE_COMPONENTS = compareData(TlaStack::getComponents);
     public static final TlaStackComparison DEFAULT_COMPARISON = of((a, b) -> true, a -> 0);
 
@@ -21,16 +22,25 @@ public record TlaStackComparison(Predicate predicate, HashFunction hashFunction)
     }
 
 
-    public static TlaStackComparison of(Predicate comparator, HashFunction hashFunction) {
-        return new TlaStackComparison(comparator, hashFunction);
+    public static TlaStackComparison of(EqualityPredicate equalityPredicate, HashFunction hashFunction) {
+        return new TlaStackComparison(equalityPredicate, hashFunction);
     }
 
     public static <T> TlaStackComparison compareData(Function<TlaStack, T> function) {
-        return of((a, b) -> Objects.equals(function.apply(a), function.apply(b)), stack -> Objects.hashCode(function.apply(stack)));
+        return of(
+                (a, b) -> Objects.equals(function.apply(a), function.apply(b)),
+                stack -> Objects.hashCode(function.apply(stack))
+        );
     }
 
-    public interface Predicate {
-        boolean compare(TlaStack a, TlaStack b);
+    /**
+     * A comparison function to determine whether two stacks are equivalent.
+     * <p>
+     * Returns true if the two input stacks should be considered the same when searching
+     * for recipes that take or produce the queried stack.
+     */
+    public interface EqualityPredicate extends BiPredicate<TlaStack, TlaStack> {
+
     }
 
     public interface HashFunction {

@@ -164,7 +164,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
             @Override
             public void register(T key, TlaStackComparison comparison) {
                 registry.setDefaultComparison(key, Comparison.of(
-                        (a, b) -> comparison.predicate().compare(EmiUtils.convertStack(a), EmiUtils.convertStack(b)),
+                        (a, b) -> comparison.equalityPredicate().test(EmiUtils.convertStack(a), EmiUtils.convertStack(b)),
                         stack -> comparison.hashFunction().hash(EmiUtils.convertStack(stack)))
                 );
             }

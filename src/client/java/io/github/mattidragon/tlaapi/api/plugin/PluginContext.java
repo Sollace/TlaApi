@@ -101,11 +101,15 @@ public interface PluginContext {
 
     /**
      * Gets a registry used for registering the default comparisons for items and blocks.
+     *
+     * @see TlaStackComparison
      */
     Comparisons<ItemConvertible> getItemComparisons();
 
     /**
      * Gets a registry used for registering the default comparisons for fluids.
+     *
+     * @see TlaStackComparison
      */
     Comparisons<Fluid> getFluidComparisons();
 
