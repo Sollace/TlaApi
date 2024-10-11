@@ -2,14 +2,18 @@ package io.github.mattidragon.tlaapi.impl.rei;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
+import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaDragHandler;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaExclusionZoneProvider;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaScreenSizeProvider;
@@ -20,6 +24,7 @@ import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 import me.shedaniel.rei.api.client.registry.screen.ExclusionZones;
 import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import me.shedaniel.rei.api.client.registry.screen.SimpleClickArea;
+import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.plugins.PluginManager;
 import me.shedaniel.rei.api.common.registry.ReloadStage;
 import net.minecraft.client.MinecraftClient;
@@ -30,13 +35,15 @@ import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.util.Identifier;
 
 import java.util.*;
 import java.util.function.Function;
 
 public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
+    private final Map<CategoryIdentifier<?>, BuiltInCategory> builtInCategories = new HashMap<>();
     private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
-    private final Multimap<TlaDisplayCategory, TlaIngredient> workstations = HashMultimap.create();
+    private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     private final List<RecipeGenerator<?>> recipeGenerators = new ArrayList<>();
     private final List<Function<MinecraftClient, List<TlaRecipe>>> customGenerators = new ArrayList<>();
     private final List<TlaDragHandler<?>> stackDragHandlers = new ArrayList<>();
@@ -62,7 +69,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     @Override
     public void registerCategories(CategoryRegistry registry) {
         registry.add(Collections.unmodifiableCollection(categories.values()));
-        workstations.forEach((category, workstation) -> registry.addWorkstations(category.getCategoryIdentifier(), ReiUtil.convertIngredient(workstation)));
+        workstations.forEach((category, workstation) -> registry.addWorkstations(getCategoryIdentifier(category), ReiUtil.convertIngredient(workstation)));
     }
 
     @Override
@@ -86,7 +93,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     private TlaDisplay mapRecipe(TlaRecipe recipe) {
-        return new TlaDisplay(categories.get(recipe.getCategory()).getCategoryIdentifier(), recipe);
+        return new TlaDisplay(getCategoryIdentifier(recipe.getCategory()), recipe);
     }
 
     @Override
@@ -110,9 +117,9 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
             //noinspection unchecked
             registry.registerContainerClickArea((SimpleClickArea<HandledScreen<ScreenHandler>>) clickArea,
                     (Class<HandledScreen<ScreenHandler>>) tuple.clazz(),
-                    categories.get(tuple.category()).getCategoryIdentifier());
+                    getCategoryIdentifier(tuple.category()));
         } else {
-            registry.registerClickArea(clickArea, tuple.clazz(), categories.get(tuple.category()).getCategoryIdentifier());
+            registry.registerClickArea(clickArea, tuple.clazz(), getCategoryIdentifier(tuple.category()));
         }
     }
 
@@ -123,16 +130,51 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
 
     @Override
     public void addCategory(TlaCategory category) {
+        if (category instanceof BuiltInCategory) {
+            return;
+        }
         categories.put(category, new TlaDisplayCategory(category));
     }
 
     @Override
-    public void addWorkstation(TlaCategory category, TlaIngredient... workstations) {
-        var displayCategory = categories.get(category);
-        if (displayCategory == null) throw new IllegalArgumentException("Category " + category + " not registered");
-        for (TlaIngredient workstation : workstations) {
-            this.workstations.put(displayCategory, workstation);
+    public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
+        return Optional.ofNullable(switch (type) {
+            case CRAFTING -> CategoryIdentifier.of("minecraft", "plugins/crafting");
+            case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
+            case BLASTING -> CategoryIdentifier.of("minecraft", "plugins/blasting");
+            case SMOKING -> CategoryIdentifier.of("minecraft", "plugins/smoking");
+            case CAMPFIRE_COOKING -> CategoryIdentifier.of("minecraft", "plugins/campfire");
+            case STONECUTTING -> CategoryIdentifier.of("minecraft", "plugins/stone_cutting");
+            case SMITHING -> CategoryIdentifier.of("minecraft", "plugins/smithing");
+            case ANVIL_REPAIRING -> CategoryIdentifier.of("minecraft", "plugins/anvil");
+            case GRINDING -> null;//RecipeTypes.GRINDING;
+            case BREWING -> CategoryIdentifier.of("minecraft", "plugins/brewing");
+            case BEACON_PAYMENT -> CategoryIdentifier.of("minecraft", "plugins/beacon_payment");
+            case WORLD_INTERACTION_BEACON_PYRAMID -> CategoryIdentifier.of("minecraft", "plugins/beacon_base");
+            case WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
+            case WORLD_INTERACTION_STRIPPING -> CategoryIdentifier.of("minecraft", "plugins/stripping");
+            case WORLD_INTERACTION_SCRAPING -> CategoryIdentifier.of("minecraft", "plugins/wax_scraping");
+            case WORLD_INTERACTION_TILLING -> CategoryIdentifier.of("minecraft", "plugins/tilling");
+            case WORLD_INTERACTION_FLATTENING -> CategoryIdentifier.of("minecraft", "plugins/pathing");
+            case WORLD_INTERACTION_WAXING -> CategoryIdentifier.of("minecraft", "plugins/waxing");
+            case WORLD_INTERACTION_OXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidizing");
+            case WORLD_INTERACTION_DEOXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidation_scraping");
+            case FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
+            case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
+            case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
+        }).map(identifier -> builtInCategories.computeIfAbsent(identifier, BuiltInCategory::new));
+    }
+
+    private CategoryIdentifier<?> getCategoryIdentifier(TlaCategory category) {
+        if (category instanceof BuiltInCategory builtIn) {
+            return builtIn.id();
         }
+        return Objects.requireNonNull(categories.get(category), "Category " + category + " not registered").getCategoryIdentifier();
+    }
+
+    @Override
+    public void addWorkstation(TlaCategory category, TlaIngredient... workstations) {
+        this.workstations.putAll(category, List.of(workstations));
     }
 
     @Override
@@ -182,6 +224,34 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
 
     private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {}
     private record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
+    private record BuiltInCategory(CategoryIdentifier<?> id) implements TlaCategory {
+        private static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
+
+        @Override
+        public Identifier getId() {
+            return id.getIdentifier();
+        }
+
+        @Override
+        public int getDisplayHeight() {
+            return 0;
+        }
+
+        @Override
+        public int getDisplayWidth() {
+            return 0;
+        }
+
+        @Override
+        public CategoryIcon getIcon() {
+            return ICON;
+        }
+
+        @Override
+        public CategoryIcon getSimpleIcon() {
+            return ICON;
+        }
+    }
 
     @SuppressWarnings("unchecked")
     private <T> T unsafeCast(Object o) {

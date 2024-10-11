@@ -2,16 +2,22 @@ package io.github.mattidragon.tlaapi.impl.jei;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+
+import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.fabric.constants.FabricTypes;
 import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
@@ -41,6 +47,7 @@ import java.util.stream.StreamSupport;
 
 @JeiPlugin
 public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
+    private final Map<Identifier, BuiltInTlaCategory> builtInCategories = new HashMap<>();
     private final List<TlaCategory> categories = new ArrayList<>();
     private final List<BiFunction<MinecraftClient, RecipeManager, Stream<TlaRecipe>>> recipeFunctions = new ArrayList<>();
     private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
@@ -48,14 +55,14 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     private final List<GhostHandler<?>> ghostHandlers = new ArrayList<>();
     private final List<ScreenSizeProvider<?>> sizeProviders = new ArrayList<>();
     private final List<ExclusionZoneProvider<?>> exclusionZoneProviders = new ArrayList<>();
-    
+
     private final Map<TlaCategory, TlaRecipeCategory> preparedCategories = new HashMap<>();
-    
+
     @Override
     public Identifier getPluginUid() {
         return Identifier.of("tla-api", "plugin");
     }
-    
+
     private void init() {
         categories.clear();
         recipeFunctions.clear();
@@ -68,7 +75,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     public void registerCategories(IRecipeCategoryRegistration registration) {
         // This is the earliest event, and we don't get anything before that.
         init();
-        
+
         for (var category : categories) {
             var jeiCategory = new TlaRecipeCategory(registration.getJeiHelpers(), category);
             preparedCategories.put(category, jeiCategory);
@@ -78,12 +85,20 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-        workstations.forEach((category, workstations) -> 
+        workstations.forEach((category, workstations) ->
                 JeiUtils.convertIngredient(registration.getJeiHelpers(), workstations).forEach(workstation -> addCatalyst(registration, category, workstation)));
     }
 
     private <T> void addCatalyst(IRecipeCatalystRegistration registration, TlaCategory category, ITypedIngredient<T> workstation) {
-        registration.addRecipeCatalyst(workstation.getType(), workstation.getIngredient(), preparedCategories.get(category).getRecipeType());
+        registration.addRecipeCatalyst(workstation.getType(), workstation.getIngredient(), getRecipeType(category));
+    }
+
+    @SuppressWarnings("unchecked")
+    private mezz.jei.api.recipe.RecipeType<PreparedRecipe> getRecipeType(TlaCategory category) {
+        if (category instanceof BuiltInTlaCategory builtIn) {
+            return (mezz.jei.api.recipe.RecipeType<PreparedRecipe>)builtIn.type();
+        }
+        return Objects.requireNonNull(preparedCategories.get(category), "Category " + category.getId() + " must be registered").getRecipeType();
     }
 
     @Override
@@ -96,7 +111,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
                 .flatMap(function -> function.apply(client, manager))
                 .map(recipe -> new PreparedRecipe(jeiHelpers, recipe))
                 .collect(Collectors.groupingBy(PreparedRecipe::getCategory))
-                .forEach((category, recipes) -> registration.addRecipes(Objects.requireNonNull(preparedCategories.get(category), "Category must be registered").getRecipeType(), recipes));
+                .forEach((category, recipes) -> registration.addRecipes(getRecipeType(category), recipes));
     }
 
     @Override
@@ -107,12 +122,12 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
                     @Override
                     public Collection<IGuiClickableArea> getGuiClickableAreas(T containerScreen, double guiMouseX, double guiMouseY) {
                         var bounds = tuple.boundsFunction.apply(containerScreen);
-                        var area = IGuiClickableArea.createBasic(bounds.x(), bounds.y(), bounds.width(), bounds.height(), preparedCategories.get(tuple.category).getRecipeType());
+                        var area = IGuiClickableArea.createBasic(bounds.x(), bounds.y(), bounds.width(), bounds.height(), getRecipeType(tuple.category));
                         return List.of(area);
                     }
                 });
             }
-            
+
             <T extends Screen> void addSizeProvider(ScreenSizeProvider<T> provider) {
                 registration.addGuiScreenHandler(provider.clazz, screen -> {
                     var bounds = provider.provider.apply(screen);
@@ -201,10 +216,36 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
         sizeProviders.forEach(adders::addSizeProvider);
         exclusionZoneProviders.forEach(adders::addExclusionZoneProvider);
     }
-    
+
     @Override
     public void addCategory(TlaCategory category) {
+        if (category instanceof BuiltInTlaCategory) {
+            return;
+        }
         categories.add(category);
+    }
+
+    @Override
+    public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
+        return Optional.ofNullable(switch (type) {
+            case CRAFTING -> RecipeTypes.CRAFTING;
+            case SMELTING -> RecipeTypes.SMELTING;
+            case BLASTING -> RecipeTypes.BLASTING;
+            case SMOKING -> RecipeTypes.SMOKING;
+            case CAMPFIRE_COOKING -> RecipeTypes.CAMPFIRE_COOKING;
+            case STONECUTTING -> RecipeTypes.STONECUTTING;
+            case SMITHING -> RecipeTypes.SMITHING;
+            case ANVIL_REPAIRING -> RecipeTypes.ANVIL;
+            case GRINDING -> null;//RecipeTypes.GRINDING;
+            case BREWING -> RecipeTypes.BREWING;
+            case BEACON_PAYMENT -> null;
+            case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
+                WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
+                WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
+            case FUEL -> RecipeTypes.FUELING;
+            case COMPOSTING -> RecipeTypes.COMPOSTING;
+            case INFO -> RecipeTypes.INFORMATION;
+        }).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(jeiCategory, id)));
     }
 
     @Override
@@ -258,4 +299,32 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     private record GhostHandler<T extends Screen>(Class<T> clazz, StackDragHandler<T> handler) {}
     private record ScreenSizeProvider<T extends Screen>(Class<T> clazz, Function<T, TlaBounds> provider) {}
     private record ExclusionZoneProvider<T extends HandledScreen<?>>(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {}
+    private record BuiltInTlaCategory(mezz.jei.api.recipe.RecipeType<?> type, Identifier id) implements TlaCategory {
+        static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
+
+        @Override
+        public Identifier getId() {
+            return id;
+        }
+
+        @Override
+        public int getDisplayHeight() {
+            return 0;
+        }
+
+        @Override
+        public int getDisplayWidth() {
+            return 0;
+        }
+
+        @Override
+        public CategoryIcon getIcon() {
+            return ICON;
+        }
+
+        @Override
+        public CategoryIcon getSimpleIcon() {
+            return ICON;
+        }
+    }
 }

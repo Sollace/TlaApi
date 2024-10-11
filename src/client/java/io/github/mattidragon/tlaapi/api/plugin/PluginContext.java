@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.api.plugin;
 
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
+import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -13,9 +14,11 @@ import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.input.RecipeInput;
-
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
+
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * The main way plugins interact with the API.
@@ -31,6 +34,14 @@ public interface PluginContext {
      * @see TlaCategory
      */
     void addCategory(TlaCategory category);
+
+    /**
+     * Gets a vanilla category for a specified id
+     * @param id
+     * @see BuiltInRecipeCategory
+     */
+    @ApiStatus.Experimental
+    Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type);
 
     void addWorkstation(TlaCategory category, TlaIngredient... workstations);
 
