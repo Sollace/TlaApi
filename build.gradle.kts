@@ -99,12 +99,13 @@ dependencies {
     modImplementation(libs.fabric.loader)
     modImplementation(libs.fabric.api)
 
-    add("modReiCompileOnly", libs.rei.api)
+    // add("modReiCompileOnly", libs.rei.api)
     add("modReiCompileOnly", libs.rei.plugin.default)
     // For some reason arch isn't a transitive dependency of rei-api, so we need to manually add it to use a few classes
     add("modReiCompileOnly", libs.rei.architectury)
     add("modReiCompileOnly", libs.rei.config)
-    add("modReiRuntimeOnly", libs.rei.all)
+    // Because of issues with the rei api, we have to depend on the fat jar instead (https://github.com/shedaniel/RoughlyEnoughItems/issues/1740)
+    add("modReiCompileOnly", libs.rei.all)
 
     add("modEmiCompileOnly", libs.emi.withClassifier("api"))
     add("modEmiRuntimeOnly", libs.emi)
