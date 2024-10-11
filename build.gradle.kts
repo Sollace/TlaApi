@@ -88,6 +88,10 @@ arrayOf("rei", "emi", "jei").forEach { name ->
         from(sourceSet.output)
         dependsOn(sourceSet.classesTaskName)
     }
+
+    tasks.remapJar {
+        classpath.from(configurations.getByName(sourceSet.compileClasspathConfigurationName))
+    }
 }
 
 dependencies {
