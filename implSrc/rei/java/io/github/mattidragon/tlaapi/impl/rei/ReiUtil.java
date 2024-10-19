@@ -38,12 +38,16 @@ public class ReiUtil {
 
     public static TlaStack convertStack(EntryStack<?> stack) {
         if (stack.getValue() instanceof FluidStack fluidStack) {
-            return TlaStack.of(FluidVariant.of(fluidStack.getFluid(), fluidStack.getPatch()), fluidStack.getAmount());
+            return convertStack(fluidStack);
         } else if (stack.getValue() instanceof ItemStack itemStack) {
             return TlaStack.of(itemStack);
         } else {
             return TlaStack.empty();
         }
+    }
+
+    public static TlaStack convertStack(FluidStack fluidStack) {
+        return TlaStack.of(FluidVariant.of(fluidStack.getFluid(), fluidStack.getPatch()), fluidStack.getAmount());
     }
 
     public static TlaIngredient convertIngredient(EntryIngredient ingredient) {
