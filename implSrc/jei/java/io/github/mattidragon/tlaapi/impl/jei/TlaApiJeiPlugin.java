@@ -118,37 +118,37 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
                     var bounds = provider.provider.apply(screen);
                     return new IGuiProperties() {
                         @Override
-                        public Class<? extends Screen> getScreenClass() {
+                        public Class<? extends Screen> screenClass() {
                             return provider.clazz;
                         }
 
                         @Override
-                        public int getGuiLeft() {
+                        public int guiLeft() {
                             return bounds.left();
                         }
 
                         @Override
-                        public int getGuiTop() {
+                        public int guiTop() {
                             return bounds.top();
                         }
 
                         @Override
-                        public int getGuiXSize() {
+                        public int guiXSize() {
                             return bounds.width();
                         }
 
                         @Override
-                        public int getGuiYSize() {
+                        public int guiYSize() {
                             return bounds.height();
                         }
 
                         @Override
-                        public int getScreenWidth() {
+                        public int screenWidth() {
                             return screen.width;
                         }
 
                         @Override
-                        public int getScreenHeight() {
+                        public int screenHeight() {
                             return screen.height;
                         }
                     };
