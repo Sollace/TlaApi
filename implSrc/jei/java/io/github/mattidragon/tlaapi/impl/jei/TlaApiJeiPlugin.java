@@ -276,7 +276,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
             case FUEL -> RecipeTypes.FUELING;
             case COMPOSTING -> RecipeTypes.COMPOSTING;
             case INFO -> RecipeTypes.INFORMATION;
-        }).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(jeiCategory, id)));
+        }).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(jeiCategory, id, type.getSize())));
     }
 
     @Override
@@ -340,7 +340,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     private record GhostHandler<T extends Screen>(Class<T> clazz, StackDragHandler<T> handler) {}
     private record ScreenSizeProvider<T extends Screen>(Class<T> clazz, Function<T, TlaBounds> provider) {}
     private record ExclusionZoneProvider<T extends HandledScreen<?>>(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {}
-    private record BuiltInTlaCategory(mezz.jei.api.recipe.RecipeType<?> type, Identifier id) implements TlaCategory {
+    private record BuiltInTlaCategory(mezz.jei.api.recipe.RecipeType<?> type, Identifier id, int[] size) implements TlaCategory {
         static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
 
         @Override
@@ -350,12 +350,12 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
 
         @Override
         public int getDisplayHeight() {
-            return 0;
+            return size[1];
         }
 
         @Override
         public int getDisplayWidth() {
-            return 0;
+            return size[0];
         }
 
         @Override

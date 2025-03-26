@@ -23,6 +23,7 @@ import io.github.mattidragon.tlaapi.impl.rei.util.TlaScreenSizeProvider;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
+import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 import me.shedaniel.rei.api.client.registry.screen.ExclusionZones;
 import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
@@ -31,6 +32,7 @@ import me.shedaniel.rei.api.common.entry.comparison.EntryComparator;
 import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
 import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
+import me.shedaniel.rei.api.common.display.Display;
 import me.shedaniel.rei.api.common.plugins.PluginManager;
 import me.shedaniel.rei.api.common.registry.ReloadStage;
 import net.minecraft.client.MinecraftClient;
@@ -48,6 +50,7 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
@@ -100,6 +103,9 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     public void registerCategories(CategoryRegistry registry) {
         registry.add(Collections.unmodifiableCollection(categories.values()));
         workstations.forEach((category, workstation) -> registry.addWorkstations(getCategoryIdentifier(category), ReiUtil.convertIngredient(workstation)));
+        builtInCategories.forEach((id, category) -> {
+            category.category().set(registry.get(id).getCategory());
+        });
     }
 
     @Override
@@ -120,6 +126,13 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
                 registry.add(mapRecipe(tlaRecipe));
             }
         }
+
+        builtInCategories.forEach((id, category) -> {
+            List<? extends Display> displays = registry.get(id);
+            if (!displays.isEmpty()) {
+                category.display().set(displays.get(0));
+            }
+        });
     }
 
     private TlaDisplay mapRecipe(TlaRecipe recipe) {
@@ -202,7 +215,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
             case FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
             case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
             case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
-        }).map(identifier -> builtInCategories.computeIfAbsent(identifier, BuiltInCategory::new));
+        }).map(identifier -> builtInCategories.computeIfAbsent(identifier, id -> new BuiltInCategory(id, type.getSize())));
     }
 
     private CategoryIdentifier<?> getCategoryIdentifier(TlaCategory category) {
@@ -275,8 +288,17 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
     private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {}
     private record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
-    private record BuiltInCategory(CategoryIdentifier<?> id) implements TlaCategory {
+    private record BuiltInCategory(
+            CategoryIdentifier<?> id,
+            int[] fallbackSize,
+            AtomicReference<DisplayCategory<?>> category,
+            AtomicReference<Display> display
+    ) implements TlaCategory {
         private static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
+
+        public BuiltInCategory(CategoryIdentifier<?> id, int[] fallbackSize) {
+            this(id, fallbackSize, new AtomicReference<>(null), new AtomicReference<>(null));
+        }
 
         @Override
         public Identifier getId() {
@@ -285,12 +307,16 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
 
         @Override
         public int getDisplayHeight() {
-            return 0;
+            DisplayCategory<?> i = category.get();
+            return i == null ? fallbackSize[1] : i.getDisplayHeight();
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Override
         public int getDisplayWidth() {
-            return 0;
+            DisplayCategory<?> i = category.get();
+            Display d = display.get();
+            return i == null || d == null ? fallbackSize[0] : ((DisplayCategory)i).getDisplayWidth(d);
         }
 
         @Override

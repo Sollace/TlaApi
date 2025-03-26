@@ -88,7 +88,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 case FUEL -> VanillaEmiRecipeCategories.FUEL;
                 case COMPOSTING -> VanillaEmiRecipeCategories.COMPOSTING;
                 case INFO -> VanillaEmiRecipeCategories.INFO;
-            }).map(category -> builtInCategories.computeIfAbsent(category, BuiltInCategory::new));
+            }).map(category -> builtInCategories.computeIfAbsent(category, id -> new BuiltInCategory(id, type.getSize())));
         }
 
         @Override
@@ -211,7 +211,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
     }
 
-    private record BuiltInCategory(EmiRecipeCategory category) implements TlaCategory {
+    private record BuiltInCategory(EmiRecipeCategory category, int[] size) implements TlaCategory {
         private static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
 
         @Override
@@ -221,12 +221,12 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         @Override
         public int getDisplayHeight() {
-            return 0;
+            return size[1];
         }
 
         @Override
         public int getDisplayWidth() {
-            return 0;
+            return size[0];
         }
 
         @Override
