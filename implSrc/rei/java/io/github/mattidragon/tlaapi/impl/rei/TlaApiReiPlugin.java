@@ -3,6 +3,7 @@ package io.github.mattidragon.tlaapi.impl.rei;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
+import dev.architectury.event.EventResult;
 import dev.architectury.fluid.FluidStack;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.StackDragHandler;
@@ -25,6 +26,7 @@ import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
+import me.shedaniel.rei.api.client.registry.entry.EntryRegistry;
 import me.shedaniel.rei.api.client.registry.screen.ExclusionZones;
 import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import me.shedaniel.rei.api.client.registry.screen.SimpleClickArea;
@@ -52,6 +54,7 @@ import net.minecraft.util.Identifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     private final Map<CategoryIdentifier<?>, BuiltInCategory> builtInCategories = new HashMap<>();
@@ -65,6 +68,9 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     private final List<ClickAreaTuple<?>> clickAreas = new ArrayList<>();
     private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
     private final List<Comparator<Fluid, FluidStack>> fluidComparators = new ArrayList<>();
+
+    private Predicate<TlaStack> hidePredicate = stack -> false;
+    private Predicate<TlaRecipe> recipeHidePredicate = recipe -> false;
 
     private final Comparisons<ItemConvertible> itemComparisons = new Comparisons<>() {
         @Override
@@ -88,6 +94,9 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     public void preStage(PluginManager<REIClientPlugin> manager, ReloadStage stage) {
         // REI doesn't have a good reload start event, so we have to do this
         if (stage == ReloadStage.START && manager == PluginManager.getClientInstance()) {
+            hidePredicate = stack -> false;
+            recipeHidePredicate = recipe -> false;
+            builtInCategories.clear();
             categories.clear();
             recipeGenerators.clear();
             customGenerators.clear();
@@ -133,6 +142,28 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
                 category.display().set(displays.get(0));
             }
         });
+
+        registry.registerVisibilityPredicate((category, display) -> {
+            var recipe = ReiTlaRecipe.of(categoryId -> {
+                TlaDisplayCategory tla = categories.getOrDefault(categoryId, null);
+                if (tla != null) {
+                    return tla.category;
+                }
+                TlaCategory builtIn = builtInCategories.getOrDefault(categoryId, null);
+                return builtIn == null ? new BuiltInCategory(categoryId, new int[] {0, }) : builtIn;
+            }, display);
+
+            if (recipeHidePredicate.test(recipe)) {
+                return EventResult.interruptFalse();
+            }
+
+            return EventResult.pass();
+        });
+    }
+
+    @Override
+    public void registerEntries(EntryRegistry registry) {
+        registry.removeEntryIf(entry -> hidePredicate.test(ReiUtil.convertStack(entry)));
     }
 
     private TlaDisplay mapRecipe(TlaRecipe recipe) {
@@ -238,6 +269,17 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     @Override
     public void addGenerator(Function<MinecraftClient, List<TlaRecipe>> generator) {
         customGenerators.add(generator);
+    }
+
+    @Override
+    public void removeStacks(Predicate<TlaStack> predicate) {
+        hidePredicate = hidePredicate.or(predicate);
+    }
+
+    @Override
+    public void removeRecipes(Predicate<TlaRecipe> predicate) {
+        // TODO Auto-generated method stub
+
     }
 
     @Override

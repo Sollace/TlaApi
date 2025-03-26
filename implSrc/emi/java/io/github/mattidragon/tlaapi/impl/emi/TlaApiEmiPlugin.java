@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class TlaApiEmiPlugin implements EmiPlugin {
     @Override
@@ -60,7 +61,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         @Override
         public void addCategory(TlaCategory category) {
-            if (builtInCategories.containsValue(category)) {
+            if (category instanceof BuiltInCategory) {
                 return;
             }
             var emiCategory = new TlaEmiRecipeCategory(category);
@@ -123,6 +124,33 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
                 registry.addRecipe(emiRecipe);
             }
+        }
+
+        @Override
+        public void removeStacks(TlaStack stack) {
+            registry.removeEmiStacks(EmiUtils.convertStack(stack));
+        }
+
+        @Override
+        public void removeStacks(Predicate<TlaStack> predicate) {
+            registry.removeEmiStacks(stack -> predicate.test(EmiUtils.convertStack(stack)));
+        }
+
+        @Override
+        public void removeRecipes(Predicate<TlaRecipe> predicate) {
+            registry.removeRecipes(recipe -> {
+                return predicate.test(EmiTlaRecipe.of(category -> {
+                    if (category instanceof TlaEmiRecipeCategory c) {
+                        return c.category;
+                    }
+                    return new BuiltInCategory(category, new int[] {recipe.getDisplayWidth(), recipe.getDisplayHeight() });
+                }, recipe));
+            });
+        }
+
+        @Override
+        public void removeRecipes(Identifier id) {
+            registry.removeRecipes(id);
         }
 
         @Override

@@ -47,6 +47,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -89,6 +90,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     }
 
     private void init() {
+        builtInCategories.clear();
         categories.clear();
         recipeFunctions.clear();
         workstations.clear();
@@ -292,6 +294,26 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     @Override
     public void addGenerator(Function<MinecraftClient, List<TlaRecipe>> generator) {
         recipeFunctions.add((client, manager) -> generator.apply(client).stream());
+    }
+
+    @Override
+    public void removeStacks(Predicate<TlaStack> predicate) {
+        // JEI doesn't support removing stacks
+    }
+
+    @Override
+    public void removeStacks(TlaStack stack) {
+        // JEI doesn't support removing stacks
+    }
+
+    @Override
+    public void removeRecipes(Predicate<TlaRecipe> predicate) {
+        // JEI doesn't support removing recipes
+    }
+
+    @Override
+    public void removeRecipes(Identifier id) {
+       // JEI doesn't support removing recipes
     }
 
     @Override
