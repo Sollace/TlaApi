@@ -45,6 +45,12 @@ public interface PluginContext {
     @ApiStatus.Experimental
     Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type);
 
+    /**
+     * Adds a block as the workstation for a recipe category.
+     *
+     * @param category The recipe category to assign to this workstation.
+     * @param workstations Ingredients matching the blocks or items that make up this workstation.
+     */
     void addWorkstation(TlaCategory category, TlaIngredient... workstations);
 
     /**
