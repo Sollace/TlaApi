@@ -20,8 +20,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import org.jetbrains.annotations.ApiStatus;
-
 /**
  * The main way plugins interact with the API.
  * Provided by implementations to the plugin entrypoint.
@@ -42,7 +40,6 @@ public interface PluginContext {
      * @param id
      * @see BuiltInRecipeCategory
      */
-    @ApiStatus.Experimental
     Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type);
 
     /**

@@ -1,13 +1,10 @@
 package io.github.mattidragon.tlaapi.api;
 
-import org.jetbrains.annotations.ApiStatus;
-
 /**
  * Identifiers for the built-in recipe categories that come with the game.
  *
  * Use these with {@link PluginContext#getVanillaCategory} to get reference to an instance of a category in the active plugin.
  */
-@ApiStatus.Experimental
 public enum BuiltInRecipeCategory {
     CRAFTING,
     SMELTING,
