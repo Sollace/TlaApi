@@ -26,11 +26,11 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -108,7 +108,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+        public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
             registry.getRecipeManager()
                     .listAllOfType(type)
                     .forEach(recipe -> {
@@ -172,7 +172,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
                     var stacks = ingredient.getEmiStacks();
                     if (stacks.isEmpty()) return false;
-                    var stack = EmiUtils.convertStack(stacks.getFirst());
+                    var stack = EmiUtils.convertStack(stacks.get(0));
 
                     var targets = handler.getDropTargets(screen);
                     for (StackDragHandler.DropTarget target : targets) {

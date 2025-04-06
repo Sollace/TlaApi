@@ -30,17 +30,18 @@ import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.fluid.Fluid;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
@@ -79,7 +80,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
         @Override
         public void register(Fluid fluid, TlaStackComparison comparison) {
             subTypeProviders.add(registration -> registration.registerSubtypeInterpreter(FabricTypes.FLUID_STACK, fluid, (fluidVariant, context) -> {
-                return comparison.hashFunction().hash(TlaStack.bucketOf(fluidVariant.getFluidVariant())) + "";
+                return comparison.hashFunction().hash(TlaStack.bucketOf(FluidVariant.of(fluidVariant.getFluid(), fluidVariant.getTag().orElse(null)))) + "";
             }));
         }
     };
@@ -166,37 +167,37 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
                     var bounds = provider.provider.apply(screen);
                     return new IGuiProperties() {
                         @Override
-                        public Class<? extends Screen> screenClass() {
+                        public Class<? extends Screen> getScreenClass() {
                             return provider.clazz;
                         }
 
                         @Override
-                        public int guiLeft() {
+                        public int getGuiLeft() {
                             return bounds.left();
                         }
 
                         @Override
-                        public int guiTop() {
+                        public int getGuiTop() {
                             return bounds.top();
                         }
 
                         @Override
-                        public int guiXSize() {
+                        public int getGuiXSize() {
                             return bounds.width();
                         }
 
                         @Override
-                        public int guiYSize() {
+                        public int getGuiYSize() {
                             return bounds.height();
                         }
 
                         @Override
-                        public int screenWidth() {
+                        public int getScreenWidth() {
                             return screen.width;
                         }
 
                         @Override
-                        public int screenHeight() {
+                        public int getScreenHeight() {
                             return screen.height;
                         }
                     };
@@ -287,7 +288,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     }
 
     @Override
-    public <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+    public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
         recipeFunctions.add((client, manager) -> manager.listAllOfType(type).stream().map(generator));
     }
 
