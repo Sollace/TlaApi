@@ -1,8 +1,6 @@
 package io.github.mattidragon.tlaapi.testmod.content;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-
+import com.google.gson.JsonObject;
 import net.minecraft.inventory.RecipeInputInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
@@ -10,10 +8,19 @@ import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.ShapedRecipe;
 import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.JsonHelper;
 import net.minecraft.world.World;
 
-public record TestRecipe(Ingredient input, ItemStack output) implements Recipe<RecipeInputInventory> {
+public record TestRecipe(Identifier id, Ingredient input, ItemStack output) implements Recipe<RecipeInputInventory> {
+
+    @Override
+    public Identifier getId() {
+        return id;
+    }
+
     @Override
     public boolean matches(RecipeInputInventory inventory, World world) {
         return input.test(inventory.getStack(0));
@@ -30,7 +37,7 @@ public record TestRecipe(Ingredient input, ItemStack output) implements Recipe<R
     }
 
     @Override
-    public ItemStack getResult(DynamicRegistryManager lookup) {
+    public ItemStack getOutput(DynamicRegistryManager lookup) {
         return output;
     }
 
@@ -45,19 +52,17 @@ public record TestRecipe(Ingredient input, ItemStack output) implements Recipe<R
     }
 
     public static class Serializer implements RecipeSerializer<TestRecipe> {
-        private static final Codec<TestRecipe> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            Ingredient.DISALLOW_EMPTY_CODEC.fieldOf("input").forGetter(TestRecipe::input),
-            ItemStack.CODEC.fieldOf("output").forGetter(TestRecipe::output)
-        ).apply(instance, TestRecipe::new));
-
         @Override
-        public Codec<TestRecipe> codec() {
-            return CODEC;
+        public TestRecipe read(Identifier id, JsonObject json) {
+            return new TestRecipe(id,
+                    Ingredient.fromJson(JsonHelper.getObject(json, "input")),
+                    ShapedRecipe.outputFromJson(JsonHelper.getObject(json, "output"))
+            );
         }
 
         @Override
-        public TestRecipe read(PacketByteBuf buf) {
-            return new TestRecipe(
+        public TestRecipe read(Identifier id, PacketByteBuf buf) {
+            return new TestRecipe(id,
                     Ingredient.fromPacket(buf),
                     buf.readItemStack()
             );

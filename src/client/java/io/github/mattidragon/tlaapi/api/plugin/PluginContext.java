@@ -15,7 +15,6 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.Identifier;
 
@@ -59,7 +58,7 @@ public interface PluginContext {
      * @see TlaRecipe
      * @see #addGenerator
      */
-    <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator);
+    <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<T, TlaRecipe> generator);
 
     /**
      * Adds a recipe generator that can create recipe entries in the recipe viewer from any source.

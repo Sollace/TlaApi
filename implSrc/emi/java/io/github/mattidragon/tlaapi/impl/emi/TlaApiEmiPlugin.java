@@ -29,7 +29,6 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.Identifier;
 
@@ -108,7 +107,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+        public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<T, TlaRecipe> generator) {
             registry.getRecipeManager()
                     .listAllOfType(type)
                     .forEach(recipe -> {

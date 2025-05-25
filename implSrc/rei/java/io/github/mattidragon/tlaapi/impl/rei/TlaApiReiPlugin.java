@@ -46,7 +46,6 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
@@ -121,10 +120,10 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     public void registerDisplays(DisplayRegistry registry) {
         // This is generic soup due to javas type system limitations
         // We need an unsafe cast so that we can use the generator function after checking the recipe type
-        registry.registerFiller(RecipeEntry.class,
-                entry -> recipeGenerators.stream().anyMatch(generator -> generator.type == entry.value().getType()),
+        registry.registerFiller(Recipe.class,
+                entry -> recipeGenerators.stream().anyMatch(generator -> generator.type == entry.getType()),
                 entry -> recipeGenerators.stream()
-                        .filter(generator -> generator.type == entry.value().getType())
+                        .filter(generator -> generator.type == entry.getType())
                         .findFirst()
                         .map(generator -> generator.generator.apply(unsafeCast(entry)))
                         .map(this::mapRecipe)
@@ -262,7 +261,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     @Override
-    public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+    public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<T, TlaRecipe> generator) {
         recipeGenerators.add(new RecipeGenerator<>(type, generator));
     }
 
@@ -328,7 +327,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
-    private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {}
+    private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<T, TlaRecipe> generator) {}
     private record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
     private record BuiltInCategory(
             CategoryIdentifier<?> id,

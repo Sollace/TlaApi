@@ -39,7 +39,6 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.util.Identifier;
@@ -288,7 +287,7 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     }
 
     @Override
-    public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+    public <I extends Inventory, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<T, TlaRecipe> generator) {
         recipeFunctions.add((client, manager) -> manager.listAllOfType(type).stream().map(generator));
     }
 
