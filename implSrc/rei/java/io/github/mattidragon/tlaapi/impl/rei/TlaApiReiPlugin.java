@@ -278,8 +278,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
 
     @Override
     public void removeRecipes(Predicate<TlaRecipe> predicate) {
-        // TODO Auto-generated method stub
-
+        recipeHidePredicate = recipeHidePredicate.and(predicate);
     }
 
     @Override
