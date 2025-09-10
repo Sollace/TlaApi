@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class TlaApiEmiPlugin implements EmiPlugin {
     @Override
@@ -108,13 +109,14 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+        public <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {
             registry.getRecipeManager()
                     .listAllOfType(type)
                     .forEach(recipe -> {
-                        var tlaRecipe = generator.apply(recipe);
-                        var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
-                        registry.addRecipe(emiRecipe);
+                        generator.apply(recipe).forEach(tlaRecipe -> {
+                            var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
+                            registry.addRecipe(emiRecipe);
+                        });
                     });
         }
 

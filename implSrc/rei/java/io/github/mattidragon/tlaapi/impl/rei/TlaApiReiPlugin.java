@@ -55,6 +55,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     private final Map<CategoryIdentifier<?>, BuiltInCategory> builtInCategories = new HashMap<>();
@@ -121,14 +122,15 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     public void registerDisplays(DisplayRegistry registry) {
         // This is generic soup due to javas type system limitations
         // We need an unsafe cast so that we can use the generator function after checking the recipe type
-        registry.registerFiller(RecipeEntry.class,
-                entry -> recipeGenerators.stream().anyMatch(generator -> generator.type == entry.value().getType()),
+        registry.registerRecipesFiller(Recipe.class,
+                type -> recipeGenerators.stream().anyMatch(generator -> generator.type == type),
                 entry -> recipeGenerators.stream()
                         .filter(generator -> generator.type == entry.value().getType())
                         .findFirst()
-                        .map(generator -> generator.generator.apply(unsafeCast(entry)))
+                        .stream()
+                        .flatMap(generator -> generator.generator.apply(unsafeCast(entry)))
                         .map(this::mapRecipe)
-                        .orElse(null));
+                        .toList());
 
         for (var generator : customGenerators) {
             for (var tlaRecipe : generator.apply(MinecraftClient.getInstance())) {
@@ -262,7 +264,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     @Override
-    public <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+    public <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {
         recipeGenerators.add(new RecipeGenerator<>(type, generator));
     }
 
@@ -327,7 +329,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
-    private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {}
+    private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {}
     private record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
     private record BuiltInCategory(
             CategoryIdentifier<?> id,

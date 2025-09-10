@@ -287,8 +287,8 @@ public class TlaApiJeiPlugin implements IModPlugin, PluginContext {
     }
 
     @Override
-    public <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
-        recipeFunctions.add((client, manager) -> manager.listAllOfType(type).stream().map(generator));
+    public <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {
+        recipeFunctions.add((client, manager) -> manager.listAllOfType(type).stream().flatMap(generator));
     }
 
     @Override

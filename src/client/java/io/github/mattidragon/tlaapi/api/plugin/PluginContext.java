@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * The main way plugins interact with the API.
@@ -55,11 +56,20 @@ public interface PluginContext {
     void addWorkstation(TlaCategory category, TlaIngredient... workstations);
 
     /**
-     * Adds a recipe generator that create recipe entries in the recipe viewer for all recipes of a given type.
+     * Adds a recipe generator that creates recipe entries in the recipe viewer for all recipes of a given type.
      * @see TlaRecipe
      * @see #addGenerator
      */
-    <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator);
+    default <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+        addRecipeMultiGenerator(type, entry -> Stream.of(generator.apply(entry)));
+    }
+
+    /**
+     * Adds a recipe generator that creates recipe entries in the recipe viewer for all recipes of a given type.
+     * @see TlaRecipe
+     * @see #addGenerator
+     */
+    <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator);
 
     /**
      * Adds a recipe generator that can create recipe entries in the recipe viewer from any source.
