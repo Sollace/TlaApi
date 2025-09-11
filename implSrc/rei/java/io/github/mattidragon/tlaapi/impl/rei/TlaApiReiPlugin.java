@@ -122,15 +122,15 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     public void registerDisplays(DisplayRegistry registry) {
         // This is generic soup due to javas type system limitations
         // We need an unsafe cast so that we can use the generator function after checking the recipe type
-        registry.registerRecipesFiller(Recipe.class,
+        registry.registerRecipesFiller(unsafeCast(Recipe.class),
                 type -> recipeGenerators.stream().anyMatch(generator -> generator.type == type),
                 entry -> recipeGenerators.stream()
-                        .filter(generator -> generator.type == entry.value().getType())
-                        .findFirst()
-                        .stream()
-                        .flatMap(generator -> generator.generator.apply(unsafeCast(entry)))
-                        .map(this::mapRecipe)
-                        .toList());
+                    .filter(generator -> generator.type == entry.value().getType())
+                    .findFirst()
+                    .stream()
+                    .flatMap(generator -> generator.generator.apply(unsafeCast(entry)))
+                    .map(this::mapRecipe)
+                    .toList());
 
         for (var generator : customGenerators) {
             for (var tlaRecipe : generator.apply(MinecraftClient.getInstance())) {
