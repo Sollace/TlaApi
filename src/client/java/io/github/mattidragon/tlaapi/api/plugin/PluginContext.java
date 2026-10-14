@@ -13,9 +13,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.util.Identifier;
 
@@ -60,7 +58,7 @@ public interface PluginContext {
      * @see TlaRecipe
      * @see #addGenerator
      */
-    default <I extends RecipeInput, T extends Recipe<I>> void addRecipeGenerator(RecipeType<T> type, Function<RecipeEntry<T>, TlaRecipe> generator) {
+    default <I extends RecipeInput, T extends RecipeDisplay> void addRecipeGenerator(RecipeDisplay.Serializer<T> type, Function<T, TlaRecipe> generator) {
         addRecipeMultiGenerator(type, entry -> Stream.of(generator.apply(entry)));
     }
 
@@ -69,7 +67,7 @@ public interface PluginContext {
      * @see TlaRecipe
      * @see #addGenerator
      */
-    <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator);
+    <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator);
 
     /**
      * Adds a recipe generator that can create recipe entries in the recipe viewer from any source.
@@ -77,7 +75,7 @@ public interface PluginContext {
      * @see TlaRecipe
      * @see #addRecipeGenerator
      */
-    void addGenerator(Function<MinecraftClient, List<TlaRecipe>> generator);
+    void addGenerator(Function<MinecraftClient, Stream<TlaRecipe>> generator);
 
     /**
      * Adds an area which can be clicked to open a category if the recipe viewer supports it.
@@ -148,7 +146,7 @@ public interface PluginContext {
      * Adds a predicate to run on all current and future recipes to prevent certain ones with the given identifier from being added.
      */
     default void removeRecipes(Identifier id) {
-        removeRecipes(r -> id.equals(r.getId()));
+        removeRecipes(r -> r.getId() != null && id.equals(r.getId().getValue()));
     }
 
     /**

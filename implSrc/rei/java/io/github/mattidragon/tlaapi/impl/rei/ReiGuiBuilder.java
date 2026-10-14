@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
-public class ReiGuiBuilder implements GuiBuilder {
+class ReiGuiBuilder implements GuiBuilder {
     private final List<Widget> widgets = new ArrayList<>();
     private final Rectangle bounds;
 

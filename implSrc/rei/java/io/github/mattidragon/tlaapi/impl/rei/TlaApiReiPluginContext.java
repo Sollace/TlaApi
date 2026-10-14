@@ -1,5 +1,6 @@
 package io.github.mattidragon.tlaapi.impl.rei;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
@@ -10,7 +11,6 @@ import io.github.mattidragon.tlaapi.api.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
-import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
@@ -22,7 +22,6 @@ import io.github.mattidragon.tlaapi.impl.rei.util.TlaDragHandler;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaExclusionZoneProvider;
 import io.github.mattidragon.tlaapi.impl.rei.util.TlaScreenSizeProvider;
 import me.shedaniel.math.Rectangle;
-import me.shedaniel.rei.api.client.plugins.REIClientPlugin;
 import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
@@ -33,10 +32,9 @@ import me.shedaniel.rei.api.client.registry.screen.SimpleClickArea;
 import me.shedaniel.rei.api.common.entry.comparison.EntryComparator;
 import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
 import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
+import me.shedaniel.rei.api.common.registry.display.DisplayRegistryCommon;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.Display;
-import me.shedaniel.rei.api.common.plugins.PluginManager;
-import me.shedaniel.rei.api.common.registry.ReloadStage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -44,9 +42,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
@@ -57,7 +53,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
+class TlaApiReiPluginContext implements PluginContext {
+    static final TlaApiReiPluginContext INSTANCE = new TlaApiReiPluginContext();
+
     private final Map<CategoryIdentifier<?>, BuiltInCategory> builtInCategories = new HashMap<>();
     private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
     private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
@@ -70,8 +68,8 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
     private final List<Comparator<Fluid, FluidStack>> fluidComparators = new ArrayList<>();
 
-    private Predicate<TlaStack> hidePredicate = stack -> false;
-    private Predicate<TlaRecipe> recipeHidePredicate = recipe -> false;
+    private Predicate<TlaStack> hidePredicate = Predicates.alwaysFalse();
+    private Predicate<TlaRecipe> recipeHidePredicate = Predicates.alwaysFalse();
 
     private final Comparisons<ItemConvertible> itemComparisons = new Comparisons<>() {
         @Override
@@ -91,26 +89,20 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
         }
     };
 
-    @Override
-    public void preStage(PluginManager<REIClientPlugin> manager, ReloadStage stage) {
-        // REI doesn't have a good reload start event, so we have to do this
-        if (stage == ReloadStage.START && manager == PluginManager.getClientInstance()) {
-            hidePredicate = stack -> false;
-            recipeHidePredicate = recipe -> false;
-            builtInCategories.clear();
-            categories.clear();
-            recipeGenerators.clear();
-            customGenerators.clear();
-            stackDragHandlers.clear();
-            screenSizeProviders.clear();
-            exclusionZoneProviders.clear();
-            clickAreas.clear();
-            PluginLoader.loadPlugins(this);
-        }
+    void reset() {
+        hidePredicate = Predicates.alwaysFalse();
+        recipeHidePredicate = Predicates.alwaysFalse();
+        builtInCategories.clear();
+        categories.clear();
+        recipeGenerators.clear();
+        customGenerators.clear();
+        stackDragHandlers.clear();
+        screenSizeProviders.clear();
+        exclusionZoneProviders.clear();
+        clickAreas.clear();
     }
 
-    @Override
-    public void registerCategories(CategoryRegistry registry) {
+    void registerCategories(CategoryRegistry registry) {
         registry.add(Collections.unmodifiableCollection(categories.values()));
         workstations.forEach((category, workstation) -> registry.addWorkstations(getCategoryIdentifier(category), ReiUtil.convertIngredient(workstation)));
         builtInCategories.forEach((id, category) -> {
@@ -118,23 +110,22 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
         });
     }
 
-    @Override
-    public void registerDisplays(DisplayRegistry registry) {
+    void registerDisplays(DisplayRegistryCommon<?> registry) {
         // This is generic soup due to javas type system limitations
         // We need an unsafe cast so that we can use the generator function after checking the recipe type
-        registry.registerRecipesFiller(unsafeCast(Recipe.class),
-                type -> recipeGenerators.stream().anyMatch(generator -> generator.type == type),
-                entry -> recipeGenerators.stream()
-                    .filter(generator -> generator.type == entry.value().getType())
-                    .findFirst()
-                    .stream()
-                    .flatMap(generator -> generator.generator.apply(unsafeCast(entry)))
-                    .map(this::mapRecipe)
-                    .toList());
+        registry.beginFiller(RecipeDisplay.class)
+                .filter(display -> recipeGenerators.stream().anyMatch(generator -> generator.type == display.serializer()))
+                .fillMultiple(display -> recipeGenerators.stream()
+                        .filter(generator -> generator.type == display.serializer())
+                        .findFirst()
+                        .stream()
+                        .flatMap(generator -> generator.generator.apply(unsafeCast(display)))
+                        .map(TlaDisplay::of)
+                        .toList());
 
         for (var generator : customGenerators) {
             for (var tlaRecipe : generator.apply(MinecraftClient.getInstance())) {
-                registry.add(mapRecipe(tlaRecipe));
+                registry.add(TlaDisplay.of(tlaRecipe));
             }
         }
 
@@ -144,16 +135,11 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
                 category.display().set(displays.get(0));
             }
         });
+    }
 
+    void registerVisibilityPredicates(DisplayRegistry registry) {
         registry.registerVisibilityPredicate((category, display) -> {
-            var recipe = ReiTlaRecipe.of(categoryId -> {
-                TlaDisplayCategory tla = categories.getOrDefault(categoryId, null);
-                if (tla != null) {
-                    return tla.category;
-                }
-                TlaCategory builtIn = builtInCategories.getOrDefault(categoryId, null);
-                return builtIn == null ? new BuiltInCategory(categoryId, new int[] {0, }) : builtIn;
-            }, display);
+            var recipe = ReiTlaRecipe.of(display);
 
             if (recipeHidePredicate.test(recipe)) {
                 return EventResult.interruptFalse();
@@ -163,17 +149,20 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
         });
     }
 
-    @Override
-    public void registerEntries(EntryRegistry registry) {
+    TlaCategory lookupCategory(CategoryIdentifier<?> categoryId) {
+        TlaDisplayCategory tla = categories.getOrDefault(categoryId, null);
+        if (tla != null) {
+            return tla.category;
+        }
+        TlaCategory builtIn = builtInCategories.getOrDefault(categoryId, null);
+        return builtIn == null ? new BuiltInCategory(categoryId, new int[] {0, }) : builtIn;
+    }
+
+    void registerEntries(EntryRegistry registry) {
         registry.removeEntryIf(entry -> hidePredicate.test(ReiUtil.convertStack(entry)));
     }
 
-    private TlaDisplay mapRecipe(TlaRecipe recipe) {
-        return new TlaDisplay(getCategoryIdentifier(recipe.getCategory()), recipe);
-    }
-
-    @Override
-    public void registerScreens(ScreenRegistry registry) {
+    void registerScreens(ScreenRegistry registry) {
         stackDragHandlers.forEach(registry::registerDraggableStackVisitor);
         screenSizeProviders.forEach(registry::registerDecider);
         clickAreas.forEach(tuple -> registerClickArea(registry, tuple));
@@ -199,18 +188,15 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
         }
     }
 
-    @Override
-    public void registerExclusionZones(ExclusionZones zones) {
+    void registerExclusionZones(ExclusionZones zones) {
         exclusionZoneProviders.forEach(provider -> zones.register(provider.clazz, provider));
     }
 
-    @Override
-    public void registerItemComparators(ItemComparatorRegistry registry) {
+    void registerItemComparators(ItemComparatorRegistry registry) {
         itemComparators.forEach(comparator -> registry.register(comparator.comparator(), comparator.key()));
     }
 
-    @Override
-    public void registerFluidComparators(FluidComparatorRegistry registry) {
+    void registerFluidComparators(FluidComparatorRegistry registry) {
         fluidComparators.forEach(comparator -> registry.register(comparator.comparator(), comparator.key()));
     }
 
@@ -245,13 +231,13 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
             case WORLD_INTERACTION_WAXING -> CategoryIdentifier.of("minecraft", "plugins/waxing");
             case WORLD_INTERACTION_OXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidizing");
             case WORLD_INTERACTION_DEOXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidation_scraping");
-            case FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
+            case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
             case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
             case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
         }).map(identifier -> builtInCategories.computeIfAbsent(identifier, id -> new BuiltInCategory(id, type.getSize())));
     }
 
-    private CategoryIdentifier<?> getCategoryIdentifier(TlaCategory category) {
+    CategoryIdentifier<?> getCategoryIdentifier(TlaCategory category) {
         if (category instanceof BuiltInCategory builtIn) {
             return builtIn.id();
         }
@@ -264,7 +250,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     @Override
-    public <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {
+    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
         recipeGenerators.add(new RecipeGenerator<>(type, generator));
     }
 
@@ -329,7 +315,7 @@ public class TlaApiReiPlugin implements REIClientPlugin, PluginContext {
     }
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
-    private record RecipeGenerator<T extends Recipe<?>>(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {}
+    private record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
     private record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
     private record BuiltInCategory(
             CategoryIdentifier<?> id,

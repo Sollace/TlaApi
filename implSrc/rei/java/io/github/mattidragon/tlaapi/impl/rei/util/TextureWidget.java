@@ -9,6 +9,7 @@ import me.shedaniel.rei.api.client.REIRuntime;
 import me.shedaniel.rei.api.client.gui.widgets.WidgetWithBounds;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 
 import java.util.Collections;
@@ -49,12 +50,12 @@ public final class TextureWidget extends WidgetWithBounds {
                 config.regionWidth(), config.regionHeight(),
                 config.textureWidth(), config.textureHeight());
     }
-    
+
     @Override
     public Rectangle getBounds() {
         return bounds;
     }
-    
+
     @Override
     public void render(DrawContext graphics, int mouseX, int mouseY, float delta) {
         this.darkBackgroundAlpha.update(delta);
@@ -71,15 +72,13 @@ public final class TextureWidget extends WidgetWithBounds {
         var height = bounds.height;
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         var texture = dark ? darkTexture : lightTexture;
-        graphics.drawTexture(texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
+        graphics.drawTexture(RenderLayer::getGuiTextured, texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
 
         RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
-    
+
     @Override
     public List<? extends Element> children() {
         return Collections.emptyList();

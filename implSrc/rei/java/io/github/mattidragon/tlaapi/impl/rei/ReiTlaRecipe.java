@@ -1,41 +1,58 @@
 package io.github.mattidragon.tlaapi.impl.rei;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.base.Suppliers;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import io.github.mattidragon.tlaapi.api.gui.GuiBuilder;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaRecipeSerializer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
-import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.Display;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
-class ReiTlaRecipe implements TlaRecipe {
-    static TlaRecipe of(Function<CategoryIdentifier<?>, TlaCategory> context, Display display) {
+record ReiTlaRecipe(
+        Display display,
+        TlaCategory category,
+        Supplier<List<TlaIngredient>> inputs,
+        Supplier<List<TlaStack>> outputs
+) implements TlaRecipe {
+    private static final MapCodec<ReiTlaRecipe> MAP_CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
+            Display.codec().fieldOf("display").forGetter(ReiTlaRecipe::display)
+    ).apply(i, ReiTlaRecipe::new));
+    private static final PacketCodec<RegistryByteBuf, ReiTlaRecipe> PACKET_CODEC = Display.streamCodec().xmap(ReiTlaRecipe::new, ReiTlaRecipe::display);
+    private static final TlaRecipeSerializer<ReiTlaRecipe> SERIALIZER = TlaRecipeSerializer.register(Identifier.of("tla_rei", "recipe"), MAP_CODEC, PACKET_CODEC);
+    static TlaRecipe of(Display display) {
         if (display instanceof TlaDisplay tla) {
             return tla.getRecipe();
         }
-        return new ReiTlaRecipe(context, display);
+        return new ReiTlaRecipe(display);
     }
 
-    private final Display display;
-    private final TlaCategory category;
-    private final Supplier<List<TlaIngredient>> inputs;
-    private final Supplier<List<TlaStack>> outputs;
+    private ReiTlaRecipe(Display display) {
+        this(display,
+                TlaApiReiPluginContext.INSTANCE.lookupCategory(display.getCategoryIdentifier()),
+                Suppliers.memoize(() -> display.getInputEntries().stream().map(ReiUtil::convertIngredient).toList()),
+                Suppliers.memoize(() -> display.getOutputEntries().stream().flatMap(List::stream).map(ReiUtil::convertStack).toList())
+        );
+    }
 
-    private ReiTlaRecipe(Function<CategoryIdentifier<?>, TlaCategory> context, Display display) {
-        this.display = display;
-        this.category = context.apply(display.getCategoryIdentifier());
-        this.inputs = Suppliers.memoize(() -> display.getInputEntries().stream().map(ReiUtil::convertIngredient).toList());
-        this.outputs = Suppliers.memoize(() -> display.getOutputEntries().stream().flatMap(List::stream).map(ReiUtil::convertStack).toList());
+    @Override
+    public @NotNull TlaRecipeSerializer<?> getSerializer() {
+        return SERIALIZER;
     }
 
     @Override
@@ -44,8 +61,8 @@ class ReiTlaRecipe implements TlaRecipe {
     }
 
     @Override
-    public @Nullable Identifier getId() {
-        return display.getDisplayLocation().orElse(null);
+    public @Nullable RegistryKey<Recipe<?>> getId() {
+        return display.getDisplayLocation().map(id -> RegistryKey.of(RegistryKeys.RECIPE, id)).orElse(null);
     }
 
     @Override
@@ -66,18 +83,5 @@ class ReiTlaRecipe implements TlaRecipe {
     @Override
     public void buildGui(GuiBuilder builder) {
         // Not implemented. This is only for filtering
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return o == this
-            || (o instanceof ReiTlaRecipe recipe && Objects.equals(display, recipe.display))
-            || (o instanceof TlaDisplay display && this == display.getRecipe())
-            || (o instanceof Display display && Objects.equals(this.display, display));
-    }
-
-    @Override
-    public int hashCode() {
-        return display.hashCode();
     }
 }

@@ -8,30 +8,17 @@ import java.util.Objects;
  * Represents a texture configuration.
  * @see Builder
  */
-public final class TextureConfig {
-    private final Identifier lightTexture;
-    private final Identifier darkTexture;
-    private final int width;
-    private final int height;
-    private final int u;
-    private final int v;
-    private final int regionWidth;
-    private final int regionHeight;
-    private final int textureWidth;
-    private final int textureHeight;
-
-    private TextureConfig(Identifier lightTexture, Identifier darkTexture, int width, int height, int u, int v, int regionWidth, int regionHeight, int textureWidth, int textureHeight) {
-        this.lightTexture = lightTexture;
-        this.darkTexture = darkTexture;
-        this.width = width;
-        this.height = height;
-        this.u = u;
-        this.v = v;
-        this.regionWidth = regionWidth;
-        this.regionHeight = regionHeight;
-        this.textureWidth = textureWidth;
-        this.textureHeight = textureHeight;
-    }
+public record TextureConfig (
+        Identifier lightTexture,
+        Identifier darkTexture,
+        int width,
+        int height,
+        int u,
+        int v,
+        int regionWidth,
+        int regionHeight,
+        int textureWidth,
+        int textureHeight) {
 
     /**
      * @deprecated Use builder instead.
@@ -87,84 +74,6 @@ public final class TextureConfig {
     public Identifier texture() {
         return lightTexture();
     }
-
-    public Identifier lightTexture() {
-        return lightTexture;
-    }
-
-    public Identifier darkTexture() {
-        return darkTexture;
-    }
-
-    public int width() {
-        return width;
-    }
-
-    public int height() {
-        return height;
-    }
-
-    public int u() {
-        return u;
-    }
-
-    public int v() {
-        return v;
-    }
-
-    public int regionWidth() {
-        return regionWidth;
-    }
-
-    public int regionHeight() {
-        return regionHeight;
-    }
-
-    public int textureWidth() {
-        return textureWidth;
-    }
-
-    public int textureHeight() {
-        return textureHeight;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (TextureConfig) obj;
-        return Objects.equals(this.lightTexture, that.lightTexture) &&
-               Objects.equals(this.darkTexture, that.darkTexture) &&
-               this.width == that.width &&
-               this.height == that.height &&
-               this.u == that.u &&
-               this.v == that.v &&
-               this.regionWidth == that.regionWidth &&
-               this.regionHeight == that.regionHeight &&
-               this.textureWidth == that.textureWidth &&
-               this.textureHeight == that.textureHeight;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lightTexture, darkTexture, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
-    }
-
-    @Override
-    public String toString() {
-        return "TextureConfig[" +
-               "lightTexture=" + lightTexture + ", " +
-               "darkTexture=" + darkTexture + ", " +
-               "width=" + width + ", " +
-               "height=" + height + ", " +
-               "u=" + u + ", " +
-               "v=" + v + ", " +
-               "regionWidth=" + regionWidth + ", " +
-               "regionHeight=" + regionHeight + ", " +
-               "textureWidth=" + textureWidth + ", " +
-               "textureHeight=" + textureHeight + ']';
-    }
-
 
     /**
      * A builder for texture configs.

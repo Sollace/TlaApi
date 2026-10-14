@@ -4,33 +4,37 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
+import mezz.jei.api.helpers.ICodecHelper;
 import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.recipe.IFocusGroup;
+import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.types.IRecipeType;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
+import com.mojang.serialization.Codec;
+
 import java.util.List;
 
 public class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     private final TlaCategory category;
-    private final RecipeType<PreparedRecipe> type;
+    private final IRecipeType<PreparedRecipe> type;
     private final IDrawable icon;
     private final IDrawable background;
 
     public TlaRecipeCategory(IJeiHelpers helpers, TlaCategory category) {
         this.category = category;
-        this.type = RecipeType.create(category.getId().getNamespace(), category.getId().getPath(), PreparedRecipe.class);
+        this.type = IRecipeType.create(category.getId().getNamespace(), category.getId().getPath(), PreparedRecipe.class);
         this.icon = JeiUtils.iconToDrawable(helpers, category.getIcon());
         this.background = helpers.getGuiHelper().createBlankDrawable(category.getDisplayWidth(), category.getDisplayHeight());
     }
 
     @Override
-    public RecipeType<PreparedRecipe> getRecipeType() {
+    public IRecipeType<PreparedRecipe> getRecipeType() {
         return type;
     }
 
@@ -71,5 +75,10 @@ public class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     @Override
     public @Nullable Identifier getRegistryName(PreparedRecipe recipe) {
         return recipe.getId();
+    }
+
+    @Override
+    public Codec<PreparedRecipe> getCodec(ICodecHelper codecHelper, IRecipeManager recipeManager) {
+        return null;
     }
 }

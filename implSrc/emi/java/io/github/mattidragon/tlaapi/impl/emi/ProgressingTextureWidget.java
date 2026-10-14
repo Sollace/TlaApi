@@ -2,6 +2,7 @@ package io.github.mattidragon.tlaapi.impl.emi;
 
 import dev.emi.emi.api.widget.TextureWidget;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
 
 import java.util.function.DoubleSupplier;
@@ -53,6 +54,6 @@ public class ProgressingTextureWidget extends TextureWidget {
                 mrh = (int) (regionHeight * currentProgress);
             }
         }
-        draw.drawTexture(this.texture, mx, my, mw, mh, mu, mv, mrw, mrh, textureWidth, textureHeight);
+        draw.drawTexture(RenderLayer::getGuiTextured, this.texture, mx, my, mw, mh, mu, mv, mrw, mrh, textureWidth, textureHeight);
     }
 }

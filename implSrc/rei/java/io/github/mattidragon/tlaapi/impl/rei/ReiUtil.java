@@ -18,32 +18,31 @@ public class ReiUtil {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA-Api/REI");
 
     public static EntryStack<?> convertStack(TlaStack stack) {
-        if (stack instanceof TlaStack.TlaFluidStack fluidStack) {
-            var archFluidStack = FluidStack.create(fluidStack.getFluid(), fluidStack.getAmount(), fluidStack.getFluidVariant().getComponents());
-            return EntryStacks.of(archFluidStack);
-        } else if (stack instanceof TlaStack.TlaItemStack itemStack) {
-            return EntryStacks.of(itemStack.toStack());
-        } else {
-            throw new IllegalArgumentException("Unknown stack type: " + stack.getClass().getName());
-        }
+        return switch (stack) {
+            case TlaStack.TlaFluidStack fluidStack -> EntryStacks.of(FluidStack.create(
+                    fluidStack.getFluid(),
+                    fluidStack.getAmount(),
+                    fluidStack.getComponents()
+                ));
+            case TlaStack.TlaItemStack itemStack -> EntryStacks.of(itemStack.toStack());
+        };
     }
 
     public static EntryIngredient convertIngredient(TlaIngredient ingredient) {
-        var stacks = ingredient.getStacks();
-        if (stacks.isEmpty()) return EntryIngredient.empty();
-        if (stacks.size() == 1) return EntryIngredient.of(convertStack(stacks.iterator().next()));
-
-        return EntryIngredient.of(stacks.stream().map(ReiUtil::convertStack).toList());
+        var stacks = ingredient.stacks();
+        return switch (stacks.size()) {
+            case 0 -> EntryIngredient.empty();
+            case 1 -> EntryIngredient.of(convertStack(stacks.iterator().next()));
+            default -> EntryIngredient.of(stacks.stream().map(ReiUtil::convertStack).toList());
+        };
     }
 
     public static TlaStack convertStack(EntryStack<?> stack) {
-        if (stack.getValue() instanceof FluidStack fluidStack) {
-            return convertStack(fluidStack);
-        } else if (stack.getValue() instanceof ItemStack itemStack) {
-            return TlaStack.of(itemStack);
-        } else {
-            return TlaStack.empty();
-        }
+        return switch (stack.getValue()) {
+            case FluidStack fluidStack -> convertStack(fluidStack);
+            case ItemStack itemStack -> TlaStack.of(itemStack);
+            default -> TlaStack.empty();
+        };
     }
 
     public static TlaStack convertStack(FluidStack fluidStack) {
@@ -51,19 +50,17 @@ public class ReiUtil {
     }
 
     public static TlaIngredient convertIngredient(EntryIngredient ingredient) {
-        if (ingredient.isEmpty()) return TlaIngredient.EMPTY;
-        if (ingredient.size() == 1) return TlaIngredient.ofStacks(convertStack(ingredient.getFirst()));
-
-        return TlaIngredient.ofStacks(ingredient.stream().map(ReiUtil::convertStack).toList());
+        return switch (ingredient.size()) {
+            case 0 -> TlaIngredient.EMPTY;
+            case 1 -> TlaIngredient.ofStacks(convertStack(ingredient.getFirst()));
+            default -> TlaIngredient.ofStacks(ingredient.stream().map(ReiUtil::convertStack).toList());
+        };
     }
 
     public static Renderer iconToRenderer(CategoryIcon icon) {
-        if (icon instanceof CategoryIcon.StackIcon stackIcon) {
-            return convertStack(stackIcon.stack());
-        } else if (icon instanceof CategoryIcon.TextureIcon textureIcon) {
-            return new TextureWidget(0, 0, textureIcon.texture());
-        } else {
-            throw new IllegalArgumentException("Unknown icon type: " + icon.getClass().getName());
-        }
+        return switch (icon) {
+            case CategoryIcon.StackIcon stackIcon -> convertStack(stackIcon.stack());
+            case CategoryIcon.TextureIcon textureIcon -> new TextureWidget(0, 0, textureIcon.texture());
+        };
     }
 }

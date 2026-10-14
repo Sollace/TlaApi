@@ -1,6 +1,5 @@
 package io.github.mattidragon.tlaapi.impl.rei.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import me.shedaniel.clothconfig2.api.animator.NumberAnimator;
 import me.shedaniel.clothconfig2.api.animator.ValueAnimator;
 import me.shedaniel.math.Rectangle;
@@ -8,7 +7,9 @@ import me.shedaniel.rei.api.client.REIRuntime;
 import me.shedaniel.rei.api.client.gui.widgets.WidgetWithBounds;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 
 import java.util.Collections;
 import java.util.List;
@@ -52,7 +53,7 @@ public final class AnimatedTextureWidget extends WidgetWithBounds {
     public Rectangle getBounds() {
         return bounds;
     }
-    
+
     @Override
     public void render(DrawContext graphics, int mouseX, int mouseY, float delta) {
         this.darkBackgroundAlpha.update(delta);
@@ -61,16 +62,12 @@ public final class AnimatedTextureWidget extends WidgetWithBounds {
             renderBackground(graphics, true, this.darkBackgroundAlpha.value());
         }
     }
-    
+
     public void renderBackground(DrawContext graphics, boolean dark, float alpha) {
         var x = bounds.x;
         var y = bounds.y;
         var width = bounds.width;
         var height = bounds.height;
-
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         var texture = dark ? darkTexture : lightTexture;
 
@@ -105,11 +102,9 @@ public final class AnimatedTextureWidget extends WidgetWithBounds {
             }
         }
 
-        graphics.drawTexture(texture, mx, my, mw, mh, mu, mv, mrw, mrh, textureWidth, textureHeight);
-
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        graphics.drawTexture(RenderLayer::getGuiTextured, texture, mx, my, mw, mh, mu, mv, mrw, mrh, textureWidth, textureHeight, ColorHelper.getWhite(alpha));
     }
-    
+
     @Override
     public List<? extends Element> children() {
         return Collections.emptyList();

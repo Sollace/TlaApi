@@ -29,15 +29,17 @@ public class EmiUtils {
     }
 
     public static EmiIngredient convertIngredient(TlaIngredient ingredient) {
-        var stacks = ingredient.getStacks();
-        if (stacks.isEmpty()) return EmiStack.EMPTY;
-        if (stacks.size() == 1) return convertStack(stacks.iterator().next());
-
-        // Emi ingredients store the chance in the ingredient itself, not in the stacks
-        // We calculate the average chance of all stacks and set it in the ingredient
-        // As emi doesn't differentiate between 100% and a lack of chance, we set it to 1 if there is no chance
-        var chance = stacks.stream().map(TlaStack::getChance).flatMapToDouble(OptionalDouble::stream).average().orElse(1);
-        return EmiIngredient.of(stacks.stream().map(EmiUtils::convertStack).toList()).setChance((float) chance);
+        var stacks = ingredient.stacks();
+        return switch (stacks.size()) {
+            case 0 -> EmiStack.EMPTY;
+            case 1 -> convertStack(stacks.iterator().next());
+            default ->
+                // Emi ingredients store the chance in the ingredient itself, not in the stacks
+                // We calculate the average chance of all stacks and set it in the ingredient
+                // As emi doesn't differentiate between 100% and a lack of chance, we set it to 1 if there is no chance
+                EmiIngredient.of(stacks.stream().map(EmiUtils::convertStack).toList())
+                    .setChance((float) stacks.stream().map(TlaStack::getChance).flatMapToDouble(OptionalDouble::stream).average().orElse(1));
+        };
     }
 
     public static TlaStack convertStack(EmiStack stack) {
@@ -62,17 +64,13 @@ public class EmiUtils {
     }
 
     public static EmiRenderable iconToRenderable(CategoryIcon icon) {
-        if (icon instanceof CategoryIcon.StackIcon stackIcon) {
-            return convertStack(stackIcon.stack());
-        } else if (icon instanceof CategoryIcon.TextureIcon textureIcon) {
-            var config = textureIcon.texture();
-            return new EmiTexture(config.lightTexture(),
-                    config.u(), config.v(),
-                    config.width(), config.height(),
-                    config.regionWidth(), config.regionHeight(),
-                    config.textureWidth(), config.textureHeight());
-        } else {
-            throw new IllegalArgumentException("Unknown icon type: " + icon.getClass().getName());
-        }
+        return switch (icon) {
+            case CategoryIcon.StackIcon stackIcon -> convertStack(stackIcon.stack());
+            case CategoryIcon.TextureIcon textureIcon -> new EmiTexture(textureIcon.texture().lightTexture(),
+                    textureIcon.texture().u(), textureIcon.texture().v(),
+                    textureIcon.texture().width(), textureIcon.texture().height(),
+                    textureIcon.texture().regionWidth(), textureIcon.texture().regionHeight(),
+                    textureIcon.texture().textureWidth(), textureIcon.texture().textureHeight());
+        };
     }
 }

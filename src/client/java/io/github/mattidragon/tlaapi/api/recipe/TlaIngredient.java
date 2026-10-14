@@ -1,13 +1,21 @@
 package io.github.mattidragon.tlaapi.api.recipe;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.recipe.Ingredient;
+import net.minecraft.recipe.display.SlotDisplay;
+import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.registry.tag.TagKey;
+import net.minecraft.util.context.ContextParameterMap;
+import net.minecraft.world.World;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,19 +23,22 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import com.mojang.serialization.Codec;
+
 /**
  * Represents a list of values that can be held by a single slot in a recipe.
  */
-public final class TlaIngredient {
+public record TlaIngredient (Collection<TlaStack> stacks) {
     /**
      * An empty ingredient, containing no stacks.
      */
     public static final TlaIngredient EMPTY = new TlaIngredient(List.of());
 
-    private final Collection<TlaStack> stacks;
+    public static final Codec<TlaIngredient> CODEC = TlaStack.CODEC.codec().listOf().xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
+    public static final PacketCodec<RegistryByteBuf, TlaIngredient> PACKET_CODEC = TlaStack.PACKET_CODEC.collect(PacketCodecs.toList()).xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
 
-    private TlaIngredient(Collection<TlaStack> stacks) {
-        this.stacks = stacks;
+    public TlaIngredient {
+        stacks = List.copyOf(stacks);
     }
 
     /**
@@ -47,8 +58,17 @@ public final class TlaIngredient {
     /**
      * Creates a new ingredient from the provided vanilla ingredient.
      */
+    @SuppressWarnings("deprecation")
     public static TlaIngredient ofIngredient(Ingredient ingredient) {
-        return new TlaIngredient(Arrays.stream(ingredient.getMatchingStacks()).<TlaStack>map(TlaStack::of).toList());
+        return new TlaIngredient(ingredient.getMatchingItems().<TlaStack>map(TlaStack::of).toList());
+    }
+
+    /**
+     * Creates a new ingredient from the provided vanilla ingredient.
+     */
+    public static TlaIngredient ofSlotDisplay(SlotDisplay display) {
+        ContextParameterMap parameters = SlotDisplayContexts.createParameters((World)Objects.requireNonNull(MinecraftClient.getInstance().world));
+        return new TlaIngredient(display.appendStacks(parameters, TlaStack.DISPLAYED_ITEM_FACTORY).toList());
     }
 
     /**
@@ -63,7 +83,7 @@ public final class TlaIngredient {
      * Note that any tags used here or in recipes should be translated so that they appear nicely in EMI.
      */
     public static TlaIngredient ofItemTag(TagKey<Item> tag) {
-        return ofItems(Registries.ITEM.getEntryList(tag)
+        return ofItems(Registries.ITEM.getOptional(tag)
                 .map(RegistryEntryList.Named::stream)
                 .orElse(Stream.empty())
                 .map(RegistryEntry::value)
@@ -82,7 +102,7 @@ public final class TlaIngredient {
      * Note that any tags used here or in recipes should be translated so that they appear nicely in EMI.
      */
     public static TlaIngredient ofFluidTag(TagKey<Fluid> tag) {
-        return ofFluids(Registries.FLUID.getEntryList(tag)
+        return ofFluids(Registries.FLUID.getOptional(tag)
                 .map(RegistryEntryList.Named::stream)
                 .orElse(Stream.empty())
                 .map(RegistryEntry::value)
@@ -102,12 +122,15 @@ public final class TlaIngredient {
      * Does not play well with EMIs tag names so should be avoided if possible.
      */
     public static TlaIngredient join(Collection<? extends TlaIngredient> ingredients) {
-        return new TlaIngredient(ingredients.stream().flatMap(ingredient -> ingredient.getStacks().stream()).toList());
+        return new TlaIngredient(ingredients.stream().flatMap(ingredient -> ingredient.stacks().stream()).toList());
     }
 
     /**
      * Returns the stacks contained in this ingredient.
+     *
+     * @deprecated Use {@link TlaIngredient#stacks()}
      */
+    @Deprecated
     public Collection<TlaStack> getStacks() {
         return stacks;
     }
@@ -125,23 +148,5 @@ public final class TlaIngredient {
      */
     public TlaIngredient withChance(double chance) {
         return new TlaIngredient(stacks.stream().map(stack -> stack.withChance(chance)).toList());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (TlaIngredient) obj;
-        return Objects.equals(this.stacks, that.stacks);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(stacks);
-    }
-
-    @Override
-    public String toString() {
-        return "TlaIngredient[" + stacks + ']';
     }
 }

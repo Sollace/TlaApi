@@ -20,6 +20,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
+import io.github.mattidragon.tlaapi.impl.Untyped;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -27,14 +28,12 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
-import net.minecraft.recipe.Recipe;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.display.RecipeDisplay;
+import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,7 +86,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
                         WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
                         WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> VanillaEmiRecipeCategories.WORLD_INTERACTION;
-                case FUEL -> VanillaEmiRecipeCategories.FUEL;
+                case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> VanillaEmiRecipeCategories.FUEL;
                 case COMPOSTING -> VanillaEmiRecipeCategories.COMPOSTING;
                 case INFO -> VanillaEmiRecipeCategories.INFO;
             }).map(category -> builtInCategories.computeIfAbsent(category, id -> new BuiltInCategory(id, type.getSize())));
@@ -109,23 +108,24 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public <I extends RecipeInput, T extends Recipe<I>> void addRecipeMultiGenerator(RecipeType<T> type, Function<RecipeEntry<T>, Stream<TlaRecipe>> generator) {
-            registry.getRecipeManager()
-                    .listAllOfType(type)
-                    .forEach(recipe -> {
-                        generator.apply(recipe).forEach(tlaRecipe -> {
-                            var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
-                            registry.addRecipe(emiRecipe);
-                        });
+        public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
+            registry.getRecipeManager().values().stream()
+                .flatMap(recipe -> recipe.value().getDisplays().stream())
+                .filter(display -> type == display.serializer())
+                .forEach(display -> {
+                    generator.apply(Untyped.cast(display)).forEach(tlaRecipe -> {
+                        var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
+                        registry.addRecipe(emiRecipe);
                     });
+                });
         }
 
         @Override
-        public void addGenerator(Function<MinecraftClient, List<TlaRecipe>> generator) {
-            for (var tlaRecipe : generator.apply(MinecraftClient.getInstance())) {
+        public void addGenerator(Function<MinecraftClient, Stream<TlaRecipe>> generator) {
+            generator.apply(MinecraftClient.getInstance()).forEach(tlaRecipe -> {
                 var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
                 registry.addRecipe(emiRecipe);
-            }
+            });
         }
 
         @Override

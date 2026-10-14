@@ -24,9 +24,13 @@ dependencyResolutionManagement {
         library("rei-all", "me.shedaniel:RoughlyEnoughItems-fabric:${getProp("rei_version")}")
         library("rei-architectury", "dev.architectury:architectury-fabric:${getProp("architectury_version")}")
         library("rei-config", "me.shedaniel.cloth:cloth-config-fabric:${getProp("cloth_config_version")}")
+
         library("emi", "dev.emi:emi-fabric:${getProp("emi_version")}")
-        library("jei-api-common", "mezz.jei:jei-1.21-common-api:${getProp("jei_version")}")
-        library("jei-api-fabric", "mezz.jei:jei-1.21-fabric-api:${getProp("jei_version")}")
-        library("jei-fabric", "mezz.jei:jei-1.21-fabric:${getProp("jei_version")}")
+
+        library("jei-api-fabric", "local.dir:jei-${getProp("jei_branch")}-fabric-api:${getProp("jei_version")}")
+        library("jei-fabric", "mezz.jei:jei-${getProp("jei_branch")}-fabric:${getProp("jei_version")}")
+        
+        library("eiv-fabric", "maven.modrinth:eiv:${getProp("eiv_version")}")
+        library("eiv-api-fabric", "local.dir:eiv-api:${getProp("eiv_version")}")
     }
 }

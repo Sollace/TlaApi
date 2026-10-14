@@ -2,39 +2,21 @@ package io.github.mattidragon.tlaapi.testmod;
 
 import io.github.mattidragon.tlaapi.api.gui.GuiBuilder;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
-import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
-import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.api.recipe.TlaRecipeSerializer;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
+import org.jetbrains.annotations.NotNull;
 
 public class TestTextDisplay implements TlaRecipe {
     @Override
+    public @NotNull TlaRecipeSerializer<?> getSerializer() {
+        return TestPlugin.TEST_TEXT_SERIALIZER;
+    }
+
+    @Override
     public TlaCategory getCategory() {
         return TestPlugin.TEST_CATEGORY;
-    }
-
-    @Override
-    public @Nullable Identifier getId() {
-        return null;
-    }
-
-    @Override
-    public List<TlaIngredient> getInputs() {
-        return List.of();
-    }
-
-    @Override
-    public List<TlaStack> getOutputs() {
-        return List.of();
-    }
-
-    @Override
-    public List<TlaIngredient> getCatalysts() {
-        return List.of();
     }
 
     @Override

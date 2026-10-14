@@ -39,7 +39,7 @@ public class PreparedRecipe {
     }
 
     public @Nullable Identifier getId() {
-        return recipe.getId();
+        return recipe.getId() == null ? null : recipe.getId().getValue();
     }
 
     public TlaCategory getCategory() {
@@ -62,11 +62,11 @@ public class PreparedRecipe {
             // TODO: hack something together to show chances
         }
     }
-    
+
     public Collection<DrawableEntry> getDrawables() {
         return drawables;
     }
-    
+
     public List<Text> getTooltips(int mouseX, int mouseY) {
         for (var entry : tooltips) {
             if (entry.bounds.contains(mouseX, mouseY)) {
@@ -82,7 +82,7 @@ public class PreparedRecipe {
     }
 
     private <T> void addStackToSlot(ITypedIngredient<T> stack, IRecipeSlotBuilder slot) {
-        slot.addIngredient(stack.getType(), stack.getIngredient());
+        slot.add(stack.getType(), stack.getIngredient());
     }
 
     private class GuiBuilderImpl implements GuiBuilder {
@@ -108,8 +108,8 @@ public class PreparedRecipe {
 
         @Override
         public WidgetConfig addAnimatedTexture(TextureConfig config, int x, int y, int duration, boolean horizontal, boolean endToStart, boolean fullToEmpty) {
-            var direction = horizontal 
-                    ? (endToStart ? IDrawableAnimated.StartDirection.RIGHT : IDrawableAnimated.StartDirection.LEFT) 
+            var direction = horizontal
+                    ? (endToStart ? IDrawableAnimated.StartDirection.RIGHT : IDrawableAnimated.StartDirection.LEFT)
                     : (endToStart ? IDrawableAnimated.StartDirection.BOTTOM : IDrawableAnimated.StartDirection.TOP);
             if (fullToEmpty) {
                 direction = switch (direction) {
@@ -239,7 +239,7 @@ public class PreparedRecipe {
 
     private class TextBuilder extends WidgetBuilder implements TextConfig {
         private final TextDrawable drawable;
-        
+
         public TextBuilder(DrawableEntry entry, TextDrawable drawable) {
             super(entry);
             this.drawable = drawable;
@@ -280,7 +280,7 @@ public class PreparedRecipe {
             return super.getBounds();
         }
     }
-    
+
     private class WidgetBuilder implements WidgetConfig {
         private final DrawableEntry entry;
 
@@ -299,7 +299,7 @@ public class PreparedRecipe {
             return new TlaBounds(entry.x(), entry.y(), entry.drawable().getWidth(), entry.drawable().getHeight());
         }
     }
-    
+
     private class SlotBuilder implements SlotConfig {
         private final int x;
         private final int y;
@@ -336,7 +336,7 @@ public class PreparedRecipe {
 
         @Override
         public SlotConfig markCatalyst() {
-            role = RecipeIngredientRole.CATALYST;
+            role = RecipeIngredientRole.CRAFTING_STATION;
             return this;
         }
 
@@ -362,11 +362,11 @@ public class PreparedRecipe {
         public TlaBounds getBounds() {
             var x = getX();
             var y = getY();
-            
+
             return large ? new TlaBounds(x, y, 26, 26) : new TlaBounds(x, y, 18, 18);
         }
     }
-    
+
     public record DrawableEntry(IDrawable drawable, int x, int y) {
 
     }

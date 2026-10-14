@@ -18,7 +18,6 @@ import java.util.function.DoubleSupplier;
  * Built-in widgets should be preferred when available as they will match the current recipe viewer's style and theme.
  */
 @ImplementationsExtend
-@SuppressWarnings({"unused", "UnusedReturnValue"})
 public interface GuiBuilder {
     /**
      * Adds a slot displaying the passed ingredient to the GUI. Make sure to configure the slot type with the returned config object.

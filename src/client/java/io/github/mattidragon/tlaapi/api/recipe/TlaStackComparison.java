@@ -21,7 +21,6 @@ public record TlaStackComparison(EqualityPredicate equalityPredicate, HashFuncti
         return COMPARE_COMPONENTS;
     }
 
-
     public static TlaStackComparison of(EqualityPredicate equalityPredicate, HashFunction hashFunction) {
         return new TlaStackComparison(equalityPredicate, hashFunction);
     }

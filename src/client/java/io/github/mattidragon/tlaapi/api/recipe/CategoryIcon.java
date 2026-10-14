@@ -12,7 +12,7 @@ import net.minecraft.item.ItemConvertible;
  * Icons are either normal {@link TlaStack stacks} or {@link TextureConfig textures}.
  * This class is sealed and cannot be extended.
  */
-public sealed interface CategoryIcon {
+public sealed interface CategoryIcon permits CategoryIcon.StackIcon, CategoryIcon.TextureIcon {
     /**
      * Creates a new icon from the provided stack.
      */

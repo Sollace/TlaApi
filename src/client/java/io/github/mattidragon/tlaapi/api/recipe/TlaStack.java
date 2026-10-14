@@ -3,27 +3,65 @@ package io.github.mattidragon.tlaapi.api.recipe;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.recipe.display.DisplayedItemFactory;
+import net.minecraft.recipe.display.SlotDisplay;
+import net.minecraft.recipe.display.SlotDisplayContexts;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.context.ContextParameterMap;
+import net.minecraft.world.World;
 
 import java.util.Objects;
 import java.util.OptionalDouble;
+
+import com.mojang.datafixers.util.Either;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+
+import io.github.mattidragon.tlaapi.impl.MoreCodecs;
 
 /**
  * Represents a stack of items or fluids for use with recipe viewers.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public sealed abstract class TlaStack {
+public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack {
+    private static final Codec<Either<FluidVariant, ItemVariant>> VARIANT_CODEC = Codec.either(FluidVariant.CODEC, ItemVariant.CODEC);
+    private static final PacketCodec<RegistryByteBuf, Either<FluidVariant, ItemVariant>> VARIANT_PACKET_CODEC = PacketCodecs.either(FluidVariant.PACKET_CODEC, ItemVariant.PACKET_CODEC);
+
+    public static final MapCodec<TlaStack> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
+            VARIANT_CODEC.fieldOf("item").forGetter(TlaStack::getVariant),
+            Codec.LONG.fieldOf("amount").forGetter(o -> o.amount),
+            MoreCodecs.OPTIONAL_DOUBLE_CODEC.optionalFieldOf("chance", OptionalDouble.empty()).forGetter(o -> o.chance)
+    ).apply(i, TlaStack::of));
+    public static final PacketCodec<RegistryByteBuf, TlaStack> PACKET_CODEC = PacketCodec.tuple(
+            VARIANT_PACKET_CODEC, TlaStack::getVariant,
+            PacketCodecs.LONG, o -> o.amount,
+            MoreCodecs.OPTIONAL_DOUBLE_PACKET_CODEC, o -> o.chance,
+            TlaStack::of
+    );
+
     protected final long amount;
     protected final OptionalDouble chance;
+
+    static final DisplayedItemFactory.FromStack<TlaStack> DISPLAYED_ITEM_FACTORY = TlaStack::of;
 
     protected TlaStack(long amount, OptionalDouble chance) {
         this.amount = amount;
         this.chance = chance;
+    }
+
+    private static TlaStack of(Either<FluidVariant, ItemVariant> variant, long amount, OptionalDouble chance) {
+        return Either.unwrap(variant.mapBoth(fluid -> new TlaFluidStack(fluid, amount, chance), item -> new TlaItemStack(item, amount, chance)));
     }
 
     /**
@@ -65,6 +103,15 @@ public sealed abstract class TlaStack {
         return of(item, 1);
     }
 
+    public static TlaItemStack of(RegistryEntry<Item> item) {
+        return of(item.value(), 1);
+    }
+
+    public static TlaItemStack of(SlotDisplay display) {
+        ContextParameterMap parameters = SlotDisplayContexts.createParameters((World)Objects.requireNonNull(MinecraftClient.getInstance().world));
+        return of(display.getFirst(parameters));
+    }
+
     public static TlaItemStack of(ItemStack stack) {
         return of(ItemVariant.of(stack), stack.getCount());
     }
@@ -93,6 +140,8 @@ public sealed abstract class TlaStack {
      */
     public abstract TlaStack withoutChance();
 
+    public abstract Either<FluidVariant, ItemVariant> getVariant();
+
     public TlaIngredient asIngredient() {
         return TlaIngredient.ofStacks(this);
     }
@@ -105,7 +154,6 @@ public sealed abstract class TlaStack {
         private TlaFluidStack(FluidVariant fluid, long amount, OptionalDouble chance) {
             super(amount, chance);
             this.fluid = fluid;
-
         }
 
         @Override
@@ -129,6 +177,11 @@ public sealed abstract class TlaStack {
 
         public Fluid getFluid() {
             return fluid.getFluid();
+        }
+
+        @Override
+        public Either<FluidVariant, ItemVariant> getVariant() {
+            return Either.left(fluid);
         }
 
         @Override
@@ -198,6 +251,11 @@ public sealed abstract class TlaStack {
         @Override
         public ComponentChanges getComponents() {
             return item.getComponents();
+        }
+
+        @Override
+        public Either<FluidVariant, ItemVariant> getVariant() {
+            return Either.right(item);
         }
 
         @Override

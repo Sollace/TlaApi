@@ -31,7 +31,7 @@ public class TlaEmiRecipe implements EmiRecipe {
 
     @Override
     public @Nullable Identifier getId() {
-        return recipe.getId();
+        return recipe.getId() == null ? null : recipe.getId().getValue();
     }
 
     @Override

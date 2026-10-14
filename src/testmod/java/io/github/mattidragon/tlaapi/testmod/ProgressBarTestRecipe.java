@@ -5,22 +5,33 @@ import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.api.recipe.TlaRecipeSerializer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import net.minecraft.recipe.Recipe;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
 public class ProgressBarTestRecipe implements TlaRecipe {
+
+    @Override
+    public @NotNull TlaRecipeSerializer<?> getSerializer() {
+        return TestPlugin.TEST_PROGRESS_BAR_SERIALIZER;
+    }
+
     @Override
     public TlaCategory getCategory() {
         return TestPlugin.TEST_CATEGORY;
     }
 
     @Override
-    public @Nullable Identifier getId() {
+    public @Nullable RegistryKey<Recipe<?>> getId() {
         return null;
     }
 

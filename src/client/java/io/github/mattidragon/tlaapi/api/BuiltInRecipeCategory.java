@@ -16,7 +16,9 @@ public enum BuiltInRecipeCategory {
     ANVIL_REPAIRING,
     GRINDING,
     BREWING,
-    FUEL,
+    SMELTING_FUEL,
+    BLASTING_FUEL,
+    SMOKING_FUEL,
     COMPOSTING,
     INFO,
     WORLD_INTERACTION_OTHER,
@@ -56,7 +58,7 @@ public enum BuiltInRecipeCategory {
             case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
                     WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
                     WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> new int[] {125, 18};
-            case FUEL -> new int[] {144, 18};
+            case SMELTING_FUEL, BLASTING_FUEL, SMOKING_FUEL -> new int[] {144, 18};
             case COMPOSTING -> new int[] {108, 18};
             case INFO -> new int[] {144, 18};
         };

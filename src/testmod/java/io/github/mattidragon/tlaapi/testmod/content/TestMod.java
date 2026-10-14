@@ -1,11 +1,13 @@
 package io.github.mattidragon.tlaapi.testmod.content;
 
+import io.github.mattidragon.tlaapi.testmod.TestRecipeDisplay;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.recipe.RecipeSerializer;
 import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.resource.featuretoggle.FeatureSet;
@@ -24,6 +26,7 @@ public class TestMod implements ModInitializer {
         }
     });
     public static final RecipeSerializer<TestRecipe> RECIPE_SERIALIZER = new TestRecipe.Serializer();
+    public static final RecipeDisplay.Serializer<TestRecipeDisplay> RECIPE_DISPLAY_SERIALIZER = new RecipeDisplay.Serializer<>(TestRecipeDisplay.MAP_CODEC, TestRecipeDisplay.PACKET_CODEC);
     public static final ScreenHandlerType<TestScreenHandler> SCREEN_HANDLER_TYPE = new ScreenHandlerType<>(TestScreenHandler::new, FeatureSet.empty());
 
     @Override
