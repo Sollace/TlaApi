@@ -19,6 +19,8 @@ dependencyResolutionManagement {
         library("fabric-yarn", "net.fabricmc:yarn:${getProp("yarn_mappings")}")
         library("minecraft", "com.mojang:minecraft:${getProp("minecraft_version")}")
 
+        library("devlogin", "com.ptsmods:devlogin:${getProp("devlogin_version")}")
+
         library("rei-api", "me.shedaniel:RoughlyEnoughItems-api-fabric:${getProp("rei_version")}")
         library("rei-plugin-default", "me.shedaniel:RoughlyEnoughItems-default-plugin-fabric:${getProp("rei_version")}")
         library("rei-all", "me.shedaniel:RoughlyEnoughItems-fabric:${getProp("rei_version")}")

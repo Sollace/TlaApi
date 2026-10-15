@@ -14,6 +14,7 @@ import java.util.zip.ZipOutputStream;
 plugins {
     id("fabric-loom") version "1.10-SNAPSHOT"
     id("maven-publish")
+    id("org.ajoberstar.reckon") version "0.13.1"
 }
 
 val minecraftVersion = property("minecraft_version") as String
@@ -24,7 +25,7 @@ val fabricVersion = property("fabric_version") as String
 val recipeMods = (property("recipe_mod_modules") as String).split(" ")
 val enabledRecipeMods = (property("enabled_recipe_mod_modules") as String).split(" ")
 
-version = property("mod_version") as String
+version = "${property("mod_version")}+${minecraftVersion}"
 group = "io.github.mattidragon"
 
 repositories {
@@ -117,6 +118,7 @@ dependencies {
     mappings(libs.fabric.yarn.withClassifier("v2"))
     modImplementation(libs.fabric.loader)
     modImplementation(libs.fabric.api)
+    implementation(libs.devlogin.withClassifier("fabric"))
 
     add("modReiCompileOnly", libs.rei.api)
     add("modReiCompileOnly", libs.rei.plugin.default)
@@ -129,7 +131,6 @@ dependencies {
     }
 
     add("modEmiCompileOnly", libs.emi.withClassifier("api"))
-
     if (enabledRecipeMods.indexOf("emi") > -1) {
       add("modEmiRuntimeOnly", libs.emi)
     }
@@ -156,6 +157,9 @@ tasks.processResources  {
     inputs.property("version", project.version)
     filesMatching("fabric.mod.json") {
         expand("version" to project.version)
+        expand("loader_versions" to loaderVersion)
+        expand("fabric_version" to fabricVersion)
+        expand("minecraft_version" to minecraftVersion)
     }
 }
 
