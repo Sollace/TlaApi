@@ -15,7 +15,12 @@ import net.minecraft.item.Item;
 import java.util.OptionalDouble;
 
 class EmiUtils {
+    private static final EmiRenderable EMPTY_RENDERABLE = (draw, x, y, delta) -> {};
+
     public static EmiStack convertStack(TlaStack stack) {
+        if (stack.isEmpty()) {
+            return EmiStack.EMPTY;
+        }
         EmiStack emiStack;
         if (stack instanceof TlaStack.TlaFluidStack fluidStack) {
             emiStack = EmiStack.of(fluidStack.getFluid(), fluidStack.getFluidVariant().getComponents(), fluidStack.getAmount());
@@ -71,6 +76,7 @@ class EmiUtils {
                     textureIcon.texture().width(), textureIcon.texture().height(),
                     textureIcon.texture().regionWidth(), textureIcon.texture().regionHeight(),
                     textureIcon.texture().textureWidth(), textureIcon.texture().textureHeight());
+            case CategoryIcon.EmptyIcon empty -> EMPTY_RENDERABLE;
         };
     }
 }

@@ -8,13 +8,13 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.display.SlotDisplay;
+import net.minecraft.recipe.display.SlotDisplay.EmptySlotDisplay;
 import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.context.ContextParameterMap;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -27,7 +27,7 @@ import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 /**
  * Represents a list of values that can be held by a single slot in a recipe.
  */
-public record TlaIngredient (Collection<TlaStack> stacks) {
+public record TlaIngredient (Collection<? extends TlaStack> stacks) {
     /**
      * An empty ingredient, containing no stacks.
      */
@@ -44,7 +44,7 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      * Creates a new ingredient from the provided stacks.
      */
     public static TlaIngredient ofStacks(Collection<? extends TlaStack> stacks) {
-        return new TlaIngredient(List.copyOf(stacks));
+        return stacks.isEmpty() ? EMPTY : new TlaIngredient(stacks);
     }
 
     /**
@@ -59,7 +59,7 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      */
     @SuppressWarnings("deprecation")
     public static TlaIngredient ofIngredient(Ingredient ingredient) {
-        return new TlaIngredient(ingredient.getMatchingItems().<TlaStack>map(TlaStack::of).toList());
+        return ingredient.isEmpty() ? EMPTY : ofStacks(ingredient.getMatchingItems().<TlaStack>map(TlaStack::of).filter(i -> !i.isEmpty()).toList());
     }
 
     /**
@@ -67,14 +67,17 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      */
     public static TlaIngredient ofSlotDisplay(SlotDisplay display) {
         ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getServer()).getOverworld());
-        return new TlaIngredient(display.appendStacks(parameters, TlaStack.DISPLAYED_ITEM_FACTORY).toList());
+        if (display instanceof EmptySlotDisplay) {
+            return EMPTY;
+        }
+        return ofStacks(display.appendStacks(parameters, TlaStack.DISPLAYED_ITEM_FACTORY).filter(i -> !i.isEmpty()).toList());
     }
 
     /**
      * Creates a new ingredient from the provided items.
      */
     public static TlaIngredient ofItems(Collection<? extends ItemConvertible> items) {
-        return ofStacks(items.stream().map(TlaStack::of).toList());
+        return items.isEmpty() ? EMPTY : ofStacks(items.stream().map(TlaStack::of).filter(i -> !i.isEmpty()).toList());
     }
 
     /**
@@ -93,7 +96,7 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      * Creates a new ingredient from the provided fluids.
      */
     public static TlaIngredient ofFluids(Collection<? extends Fluid> fluids) {
-        return ofStacks(fluids.stream().map(TlaStack::bucketOf).toList());
+        return fluids.isEmpty() ? EMPTY : ofStacks(fluids.stream().map(TlaStack::bucketOf).filter(i -> !i.isEmpty()).toList());
     }
 
     /**
@@ -113,7 +116,7 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      * Does not play well with EMIs tag names so should be avoided if possible.
      */
     public static TlaIngredient join(TlaIngredient... ingredients) {
-        return new TlaIngredient(Arrays.stream(ingredients).flatMap(ingredient -> ingredient.stacks.stream()).toList());
+        return join(List.of(ingredients));
     }
 
     /**
@@ -122,16 +125,6 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      */
     public static TlaIngredient join(Collection<? extends TlaIngredient> ingredients) {
         return new TlaIngredient(ingredients.stream().flatMap(ingredient -> ingredient.stacks().stream()).toList());
-    }
-
-    /**
-     * Returns the stacks contained in this ingredient.
-     *
-     * @deprecated Use {@link TlaIngredient#stacks()}
-     */
-    @Deprecated
-    public Collection<TlaStack> getStacks() {
-        return stacks;
     }
 
     /**

@@ -232,8 +232,6 @@ public class ReiImplementation implements PluginContext {
             AtomicReference<DisplayCategory<?>> category,
             AtomicReference<Supplier<List<? extends Display>>> display
     ) implements TlaCategory {
-        private static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
-
         public WrappedEmiCategory(CategoryIdentifier<?> id, int[] fallbackSize) {
             this(id, fallbackSize, new AtomicReference<>(null), new AtomicReference<>(List::of));
         }
@@ -257,12 +255,12 @@ public class ReiImplementation implements PluginContext {
 
         @Override
         public CategoryIcon getIcon() {
-            return ICON;
+            return CategoryIcon.empty();
         }
 
         @Override
         public CategoryIcon getSimpleIcon() {
-            return ICON;
+            return CategoryIcon.empty();
         }
     }
 }

@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 public class ReiUtil {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA-Api/REI");
 
+    private static final Renderer EMPTY_RENDERER = (graphics, bounds, mouseX, mouseY, delta) -> {};
+
     public static EntryStack<?> convertStack(TlaStack stack) {
         return switch (stack) {
             case TlaStack.TlaFluidStack fluidStack -> EntryStacks.of(FluidStack.create(
@@ -61,6 +63,7 @@ public class ReiUtil {
         return switch (icon) {
             case CategoryIcon.StackIcon stackIcon -> convertStack(stackIcon.stack());
             case CategoryIcon.TextureIcon textureIcon -> new TextureWidget(0, 0, textureIcon.texture());
+            case CategoryIcon.EmptyIcon empty -> EMPTY_RENDERER;
         };
     }
 }

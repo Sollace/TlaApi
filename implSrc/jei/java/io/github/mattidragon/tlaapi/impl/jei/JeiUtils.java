@@ -60,6 +60,7 @@ class JeiUtils {
                             .map(it -> getDrawableIngredient(helpers.getGuiHelper(), it))
                             .orElseGet(() -> helpers.getGuiHelper().createBlankDrawable(16, 16));
             case CategoryIcon.TextureIcon textureIcon -> new TextureDrawable(textureIcon.texture());
+            case CategoryIcon.EmptyIcon empty -> helpers.getGuiHelper().createBlankDrawable(0, 0);
         };
     }
 

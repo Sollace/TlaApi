@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.fluid.Fluid;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
@@ -14,6 +15,7 @@ import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.recipe.display.DisplayedItemFactory;
 import net.minecraft.recipe.display.SlotDisplay;
+import net.minecraft.recipe.display.SlotDisplay.EmptySlotDisplay;
 import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.context.ContextParameterMap;
@@ -52,6 +54,7 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
     protected final OptionalDouble chance;
 
     static final DisplayedItemFactory.FromStack<TlaStack> DISPLAYED_ITEM_FACTORY = TlaStack::of;
+    private static final TlaStack EMPTY = new TlaItemStack(ItemVariant.blank(), 0, OptionalDouble.empty());
 
     protected TlaStack(long amount, OptionalDouble chance) {
         this.amount = amount;
@@ -66,52 +69,56 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
      * Creates a stack of 0 air items.
      */
     public static TlaStack empty() {
-        return of(Items.AIR, 0);
+        return EMPTY;
     }
 
-    public static TlaFluidStack of(FluidVariant fluid, long amount) {
-        return new TlaFluidStack(fluid, amount, OptionalDouble.empty());
+    public static TlaStack of(FluidVariant fluid, long amount) {
+        return amount == 0 ? empty() : new TlaFluidStack(fluid, amount, OptionalDouble.empty());
     }
 
-    public static TlaFluidStack of(Fluid fluid, long amount) {
-        return of(FluidVariant.of(fluid), amount);
+    public static TlaStack of(Fluid fluid, long amount) {
+        return amount == 0 ? empty() : of(FluidVariant.of(fluid), amount);
     }
 
-    public static TlaFluidStack bucketOf(FluidVariant fluid) {
-        return of(fluid, FluidConstants.BUCKET);
+    public static TlaStack bucketOf(FluidVariant fluid) {
+        return fluid.isBlank() ? empty() : of(fluid, FluidConstants.BUCKET);
     }
 
-    public static TlaFluidStack bucketOf(Fluid fluid) {
-        return bucketOf(FluidVariant.of(fluid));
+    public static TlaStack bucketOf(Fluid fluid) {
+        return fluid == Fluids.EMPTY ? empty() : bucketOf(FluidVariant.of(fluid));
     }
 
-    public static TlaItemStack of(ItemVariant item, long amount) {
-        return new TlaItemStack(item, amount, OptionalDouble.empty());
+    public static TlaStack of(ItemVariant item, long amount) {
+        return amount == 0 ? empty() : new TlaItemStack(item, amount, OptionalDouble.empty());
     }
 
-    public static TlaItemStack of(ItemVariant item) {
-        return of(item, 1);
+    public static TlaStack of(ItemVariant item) {
+        return item.isBlank() ? empty() : of(item, 1);
     }
 
-    public static TlaItemStack of(ItemConvertible item, long amount) {
+    public static TlaStack of(ItemConvertible item, long amount) {
         return of(ItemVariant.of(item), amount);
     }
 
-    public static TlaItemStack of(ItemConvertible item) {
-        return of(item, 1);
+    public static TlaStack of(ItemConvertible item) {
+        return item.asItem() == Items.AIR ? empty() : of(item, 1);
     }
 
-    public static TlaItemStack of(RegistryEntry<Item> item) {
-        return of(item.value(), 1);
+    @SuppressWarnings("deprecation")
+    public static TlaStack of(RegistryEntry<Item> item) {
+        return item.matchesId(Items.AIR.getRegistryEntry().registryKey().getValue()) ? empty() : of(item.value(), 1);
     }
 
-    public static TlaItemStack of(SlotDisplay display) {
         ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getServer()).getOverworld());
+    public static TlaStack of(SlotDisplay display) {
+        if (display instanceof EmptySlotDisplay) {
+            return empty();
+        }
         return of(display.getFirst(parameters));
     }
 
-    public static TlaItemStack of(ItemStack stack) {
-        return of(ItemVariant.of(stack), stack.getCount());
+    public static TlaStack of(ItemStack stack) {
+        return stack.isEmpty() ? empty() : of(ItemVariant.of(stack), stack.getCount());
     }
 
     public long getAmount() {
@@ -120,6 +127,10 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
 
     public OptionalDouble getChance() {
         return chance;
+    }
+
+    public boolean isEmpty() {
+        return amount == 0;
     }
 
     /**
