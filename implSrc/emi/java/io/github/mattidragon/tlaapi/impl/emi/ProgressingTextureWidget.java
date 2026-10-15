@@ -8,7 +8,7 @@ import net.minecraft.util.Identifier;
 import java.util.function.DoubleSupplier;
 
 // Adapted from emi code to support double progress suppliers
-public class ProgressingTextureWidget extends TextureWidget {
+class ProgressingTextureWidget extends TextureWidget {
     protected final boolean horizontal, endToStart, fullToEmpty;
     private final DoubleSupplier progress;
 

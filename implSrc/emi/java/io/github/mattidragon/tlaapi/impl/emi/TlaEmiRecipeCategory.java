@@ -8,7 +8,7 @@ import net.minecraft.text.Text;
 
 import java.util.Comparator;
 
-public class TlaEmiRecipeCategory extends EmiRecipeCategory {
+class TlaEmiRecipeCategory extends EmiRecipeCategory {
     final TlaCategory category;
 
     public TlaEmiRecipeCategory(TlaCategory category) {

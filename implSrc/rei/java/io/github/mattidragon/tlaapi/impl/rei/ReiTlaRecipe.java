@@ -10,7 +10,6 @@ import com.google.common.base.Suppliers;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import io.github.mattidragon.tlaapi.api.gui.GuiBuilder;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
@@ -24,7 +23,7 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
-record ReiTlaRecipe(
+public record ReiTlaRecipe(
         Display display,
         TlaCategory category,
         Supplier<List<TlaIngredient>> inputs,
@@ -35,7 +34,7 @@ record ReiTlaRecipe(
     ).apply(i, ReiTlaRecipe::new));
     private static final PacketCodec<RegistryByteBuf, ReiTlaRecipe> PACKET_CODEC = Display.streamCodec().xmap(ReiTlaRecipe::new, ReiTlaRecipe::display);
     private static final TlaRecipeSerializer<ReiTlaRecipe> SERIALIZER = TlaRecipeSerializer.register(Identifier.of("tla_rei", "recipe"), MAP_CODEC, PACKET_CODEC);
-    static TlaRecipe of(Display display) {
+    public static TlaRecipe of(Display display) {
         if (display instanceof TlaDisplay tla) {
             return tla.getRecipe();
         }
@@ -44,7 +43,7 @@ record ReiTlaRecipe(
 
     private ReiTlaRecipe(Display display) {
         this(display,
-                TlaApiReiPluginContext.INSTANCE.lookupCategory(display.getCategoryIdentifier()),
+                ReiImplementation.INSTANCE.lookupCategory(display.getCategoryIdentifier()),
                 Suppliers.memoize(() -> display.getInputEntries().stream().map(ReiUtil::convertIngredient).toList()),
                 Suppliers.memoize(() -> display.getOutputEntries().stream().flatMap(List::stream).map(ReiUtil::convertStack).toList())
         );
@@ -78,10 +77,5 @@ record ReiTlaRecipe(
     @Override
     public List<TlaIngredient> getCatalysts() {
         return List.of();
-    }
-
-    @Override
-    public void buildGui(GuiBuilder builder) {
-        // Not implemented. This is only for filtering
     }
 }

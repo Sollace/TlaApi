@@ -5,14 +5,14 @@ import dev.emi.emi.api.widget.SlotWidget;
 import dev.emi.emi.api.widget.TextWidget;
 import dev.emi.emi.api.widget.Widget;
 import dev.emi.emi.api.widget.WidgetHolder;
-import io.github.mattidragon.tlaapi.api.gui.*;
+import io.github.mattidragon.tlaapi.api.client.gui.*;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import net.minecraft.text.Text;
 
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
-public class EmiGuiBuilder implements GuiBuilder {
+class EmiGuiBuilder implements GuiBuilder {
     private final TlaEmiRecipe recipe;
     private final WidgetHolder widgetHolder;
 

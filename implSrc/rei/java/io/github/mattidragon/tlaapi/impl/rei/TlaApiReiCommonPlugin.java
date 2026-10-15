@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.impl.rei;
 
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import me.shedaniel.rei.api.common.display.DisplaySerializerRegistry;
 import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
 import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
@@ -14,24 +15,23 @@ public class TlaApiReiCommonPlugin implements REICommonPlugin {
     public void preStage(PluginManager<REICommonPlugin> manager, ReloadStage stage) {
         // REI doesn't have a good reload start event, so we have to do this
         if (stage == ReloadStage.START && manager == PluginManager.getInstance()) {
-            TlaApiReiPluginContext.INSTANCE.reset();
-            PluginLoader.loadPlugins(TlaApiReiPluginContext.INSTANCE);
+            PluginLoader.loadPlugins(RecipeViewer.REI, ReiImplementation::new);
         }
     }
 
     @Override
     public void registerItemComparators(ItemComparatorRegistry registry) {
-        TlaApiReiPluginContext.INSTANCE.registerItemComparators(registry);
+        ReiImplementation.INSTANCE.registerItemComparators(registry);
     }
 
     @Override
     public void registerFluidComparators(FluidComparatorRegistry registry) {
-        TlaApiReiPluginContext.INSTANCE.registerFluidComparators(registry);
+        ReiImplementation.INSTANCE.registerFluidComparators(registry);
     }
 
     @Override
     public void registerDisplays(ServerDisplayRegistry registry) {
-        TlaApiReiPluginContext.INSTANCE.registerDisplays(registry);
+        ReiImplementation.INSTANCE.registerDisplays(registry);
     }
 
     @Override

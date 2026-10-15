@@ -17,7 +17,7 @@ import java.util.Optional;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-class TlaDisplay implements Display {
+public class TlaDisplay implements Display {
     private final CategoryIdentifier<?> category;
     private final TlaRecipe recipe;
 
@@ -39,7 +39,7 @@ class TlaDisplay implements Display {
     }
 
     static TlaDisplay of(TlaRecipe recipe) {
-        return new TlaDisplay(TlaApiReiPluginContext.INSTANCE.getCategoryIdentifier(recipe.getCategory()), recipe);
+        return new TlaDisplay(ReiImplementation.INSTANCE.getCategoryIdentifier(recipe.getCategory()), recipe);
     }
 
     @Override

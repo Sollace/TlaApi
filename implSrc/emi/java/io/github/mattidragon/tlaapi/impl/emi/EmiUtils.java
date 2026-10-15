@@ -14,7 +14,7 @@ import net.minecraft.item.Item;
 
 import java.util.OptionalDouble;
 
-public class EmiUtils {
+class EmiUtils {
     public static EmiStack convertStack(TlaStack stack) {
         EmiStack emiStack;
         if (stack instanceof TlaStack.TlaFluidStack fluidStack) {

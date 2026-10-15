@@ -11,6 +11,9 @@
     ],
     "tla-api": [
       "io.github.mattidragon.tlaapi.testmod.TestPlugin"
+    ],
+    "tla-api-client": [
+      "io.github.mattidragon.tlaapi.testmod.TestPluginClient"
     ]
   }
 }

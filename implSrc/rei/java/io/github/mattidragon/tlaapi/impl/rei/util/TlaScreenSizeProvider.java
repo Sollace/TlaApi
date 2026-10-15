@@ -1,10 +1,11 @@
 package io.github.mattidragon.tlaapi.impl.rei.util;
 
-import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.registry.screen.DisplayBoundsProvider;
 import net.minecraft.client.gui.screen.Screen;
 import org.jetbrains.annotations.Nullable;
+
+import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 
 import java.util.function.Function;
 

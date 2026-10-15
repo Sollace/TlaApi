@@ -6,7 +6,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
-public class TextDrawable implements IDrawable {
+class TextDrawable implements IDrawable {
     private final Text text;
     private final int color;
     private final TextRenderer textRenderer = MinecraftClient.getInstance().textRenderer;
@@ -44,7 +44,7 @@ public class TextDrawable implements IDrawable {
     @Override
     public void draw(DrawContext guiGraphics, int xOffset, int yOffset) {
         var x = getXPos(xOffset);
-        
+
         guiGraphics.drawText(textRenderer, text, x, yOffset, color, shadow);
     }
 

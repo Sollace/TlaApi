@@ -1,25 +1,9 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
-import io.github.mattidragon.tlaapi.api.StackDragHandler;
-import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
-import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
-import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
-import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
-import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
-import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
-import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
-import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
-import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
-import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
-import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.fabric.constants.FabricTypes;
 import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
@@ -37,18 +21,9 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.Rect2i;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.item.ItemConvertible;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.display.RecipeDisplay;
-import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -130,7 +105,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
                     return new IGuiProperties() {
                         @Override
                         public Class<? extends Screen> screenClass() {
-                            return provider.clazz;
+                            return provider.clazz();
                         }
 
                         @Override

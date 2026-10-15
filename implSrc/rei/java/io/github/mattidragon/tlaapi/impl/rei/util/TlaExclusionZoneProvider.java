@@ -1,6 +1,5 @@
 package io.github.mattidragon.tlaapi.impl.rei.util;
 
-import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.registry.screen.ExclusionZonesProvider;
 import net.minecraft.client.gui.screen.Screen;
@@ -8,6 +7,8 @@ import net.minecraft.client.gui.screen.Screen;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.StreamSupport;
+
+import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 
 public class TlaExclusionZoneProvider<T extends Screen> implements ExclusionZonesProvider<T> {
     public final Class<T> clazz;

@@ -19,19 +19,19 @@ import net.minecraft.util.Identifier;
 import java.util.List;
 import java.util.Optional;
 
-public class JeiUtils {
+class JeiUtils {
     public static final Identifier VANILLA_GUI_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/gui/gui_vanilla.png");
-    
+
     public static Optional<? extends ITypedIngredient<?>> convertStack(IJeiHelpers helpers, TlaStack stack) {
         var manager = helpers.getIngredientManager();
         return switch (stack) {
             case TlaStack.TlaFluidStack fluidStack -> createFluidIngredient(manager, helpers.getPlatformFluidHelper(), fluidStack);
-            case TlaStack.TlaItemStack itemStack -> manager.createTypedIngredient(VanillaTypes.ITEM_STACK, itemStack.toStack());
+            case TlaStack.TlaItemStack itemStack -> manager.createTypedIngredient(VanillaTypes.ITEM_STACK, itemStack.toStack(), false);
         };
     }
 
     public static List<ITypedIngredient<?>> convertIngredient(IJeiHelpers helpers, TlaIngredient ingredient) {
-        return ingredient.getStacks()
+        return ingredient.stacks()
                 .stream()
                 .map(stack -> convertStack(helpers, stack))
                 .<ITypedIngredient<?>>flatMap(Optional::stream)
@@ -71,7 +71,8 @@ public class JeiUtils {
         var variant = stack.getFluidVariant();
         return manager.createTypedIngredient(
                 helper.getFluidIngredientType(),
-                helper.create(variant.getRegistryEntry(), stack.getAmount(), variant.getComponents())
+                helper.create(variant.getRegistryEntry(), stack.getAmount(), variant.getComponents()),
+                false
         );
     }
 }

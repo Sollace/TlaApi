@@ -20,7 +20,7 @@ import com.mojang.serialization.Codec;
 
 import java.util.List;
 
-public class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
+class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     private final TlaCategory category;
     private final IRecipeType<PreparedRecipe> type;
     private final IDrawable icon;

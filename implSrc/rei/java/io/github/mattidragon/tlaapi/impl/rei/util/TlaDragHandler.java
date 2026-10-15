@@ -1,6 +1,6 @@
 package io.github.mattidragon.tlaapi.impl.rei.util;
 
-import io.github.mattidragon.tlaapi.api.StackDragHandler;
+import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.impl.rei.ReiUtil;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.gui.drag.DraggableStack;

@@ -1,11 +1,8 @@
 package io.github.mattidragon.tlaapi.testmod;
 
-import io.github.mattidragon.tlaapi.api.gui.GuiBuilder;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipeSerializer;
-import net.minecraft.text.Text;
-
 import org.jetbrains.annotations.NotNull;
 
 public class TestTextDisplay implements TlaRecipe {
@@ -17,14 +14,5 @@ public class TestTextDisplay implements TlaRecipe {
     @Override
     public TlaCategory getCategory() {
         return TestPlugin.TEST_CATEGORY;
-    }
-
-    @Override
-    public void buildGui(GuiBuilder builder) {
-        var center = builder.getBounds().centerX();
-        builder.addText(Text.literal("default"), center, 0, false);
-        builder.addText(Text.literal("left"), center, 9, false).alignLeft();
-        builder.addText(Text.literal("center"), center, 18, false).alignCenter().addTooltip(Text.literal("Text tooltip"));
-        builder.addText(Text.literal("right"), center, 27, false).alignRight();
     }
 }

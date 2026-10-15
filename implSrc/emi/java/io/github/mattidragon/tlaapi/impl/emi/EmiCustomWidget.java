@@ -2,10 +2,10 @@ package io.github.mattidragon.tlaapi.impl.emi;
 
 import dev.emi.emi.api.widget.Bounds;
 import dev.emi.emi.api.widget.Widget;
-import io.github.mattidragon.tlaapi.api.gui.CustomTlaWidget;
+import io.github.mattidragon.tlaapi.api.client.gui.CustomTlaWidget;
 import net.minecraft.client.gui.DrawContext;
 
-public class EmiCustomWidget extends Widget {
+class EmiCustomWidget extends Widget {
     private final CustomTlaWidget widget;
 
     public EmiCustomWidget(CustomTlaWidget widget) {

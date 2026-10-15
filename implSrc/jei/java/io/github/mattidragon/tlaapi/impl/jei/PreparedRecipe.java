@@ -1,9 +1,10 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
-import io.github.mattidragon.tlaapi.api.gui.*;
+import io.github.mattidragon.tlaapi.api.client.gui.*;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.impl.client.TlaApiClient;
 import mezz.jei.api.gui.ITickTimer;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.builder.IRecipeSlotBuilder;
@@ -23,7 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
-public class PreparedRecipe {
+class PreparedRecipe {
     private final IJeiHelpers helpers;
     private final TlaRecipe recipe;
     private final List<SlotBuilder> slots = new ArrayList<>();
@@ -35,7 +36,7 @@ public class PreparedRecipe {
         this.recipe = recipe;
         var category = recipe.getCategory();
         var bounds = new TlaBounds(0, 0, category.getDisplayWidth(), category.getDisplayHeight());
-        recipe.buildGui(new GuiBuilderImpl(bounds));
+        TlaApiClient.getGui(recipe).buildGui(recipe, new GuiBuilderImpl(bounds));
     }
 
     public @Nullable Identifier getId() {

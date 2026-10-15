@@ -6,12 +6,13 @@ import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.WidgetHolder;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
+import io.github.mattidragon.tlaapi.impl.client.TlaApiClient;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class TlaEmiRecipe implements EmiRecipe {
+class TlaEmiRecipe implements EmiRecipe {
     private final TlaRecipe recipe;
     private final EmiRecipeCategory category;
 
@@ -61,6 +62,6 @@ public class TlaEmiRecipe implements EmiRecipe {
 
     @Override
     public void addWidgets(WidgetHolder widgets) {
-        recipe.buildGui(new EmiGuiBuilder(this, widgets));
+        TlaApiClient.getGui(recipe).buildGui(recipe, new EmiGuiBuilder(this, widgets));
     }
 }

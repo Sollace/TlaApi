@@ -24,7 +24,10 @@
       "io.github.mattidragon.tlaapi.impl.emi.TlaApiEmiPlugin"
     ],
     "rei_client": [
-      "io.github.mattidragon.tlaapi.impl.rei.TlaApiReiPlugin"
+      "io.github.mattidragon.tlaapi.impl.client.rei.TlaApiReiClientPlugin"
+    ],
+    "rei_common": [
+      "io.github.mattidragon.tlaapi.impl.rei.TlaApiReiCommonPlugin"
     ],
     "jei_mod_plugin": [
       "io.github.mattidragon.tlaapi.impl.jei.TlaApiJeiPlugin"

@@ -3,18 +3,22 @@ package io.github.mattidragon.tlaapi.impl.emi;
 import dev.emi.emi.api.EmiDragDropHandler;
 import dev.emi.emi.api.EmiPlugin;
 import dev.emi.emi.api.EmiRegistry;
+import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.Comparison;
 import dev.emi.emi.api.recipe.VanillaEmiRecipeCategories;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.widget.Bounds;
-import io.github.mattidragon.tlaapi.api.StackDragHandler;
+import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
+import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
+import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
+import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginLoader;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
-import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.recipe.BasicTlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -31,6 +35,8 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -44,10 +50,10 @@ import java.util.stream.Stream;
 public class TlaApiEmiPlugin implements EmiPlugin {
     @Override
     public void register(EmiRegistry registry) {
-        PluginLoader.loadPlugins(new EmiImplementation(registry));
+        ClientPluginLoader.loadPlugins(PluginLoader.loadPlugins(RecipeViewer.EMI, bootstrapContext -> new EmiImplementation(registry, bootstrapContext)));
     }
 
-    private static final class EmiImplementation implements PluginContext {
+    private static final class EmiImplementation implements PluginContext, ClientPluginContextBackend {
         private final EmiRegistry registry;
         private final Map<EmiRecipeCategory, TlaCategory> builtInCategories = new HashMap<>();
         private final Map<TlaCategory, EmiRecipeCategory> categories = new HashMap<>();
@@ -55,8 +61,17 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         private final Comparisons<ItemConvertible> itemComparisons = new EmiComparisons<>();
         private final Comparisons<Fluid> fluidComparisons = new EmiComparisons<>();
 
-        private EmiImplementation(EmiRegistry registry) {
+        private PluginLoader.BootstrapContext bootstrapContext;
+
+        private EmiImplementation(EmiRegistry registry, PluginLoader.BootstrapContext bootstrapContext) {
             this.registry = registry;
+            this.bootstrapContext = bootstrapContext;
+            this.bootstrapContext.registerCategoryProvider(id -> builtInCategories.values().stream().filter(category -> category.getId().equals(id)).findFirst().orElse(null));
+        }
+
+        @Override
+        public PluginContext getContext() {
+            return this;
         }
 
         @Override
@@ -67,6 +82,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
             var emiCategory = new TlaEmiRecipeCategory(category);
             categories.put(category, emiCategory);
             registry.addCategory(emiCategory);
+            bootstrapContext.registerCategory(category);
         }
 
         @Override
@@ -138,15 +154,23 @@ public class TlaApiEmiPlugin implements EmiPlugin {
             registry.removeEmiStacks(stack -> predicate.test(EmiUtils.convertStack(stack)));
         }
 
+        public TlaRecipe recipeOf(EmiRecipe recipe) {
+            return switch(recipe) {
+                case TlaEmiRecipe r -> r.getUnderlying();
+                default -> new BasicTlaRecipe(
+                        recipe.getCategory() instanceof TlaEmiRecipeCategory c ? c.category : new BuiltInCategory(recipe.getCategory(), new int[] {recipe.getDisplayWidth(), recipe.getDisplayHeight() }),
+                        recipe.getId() == null ? null : RegistryKey.of(RegistryKeys.RECIPE, recipe.getId()),
+                        () -> recipe.getInputs().stream().map(EmiUtils::convertIngredient).toList(),
+                        () -> recipe.getOutputs().stream().map(EmiUtils::convertStack).toList(),
+                        () -> recipe.getCatalysts().stream().map(EmiUtils::convertIngredient).toList()
+                );
+            };
+        }
+
         @Override
         public void removeRecipes(Predicate<TlaRecipe> predicate) {
             registry.removeRecipes(recipe -> {
-                return predicate.test(EmiTlaRecipe.of(category -> {
-                    if (category instanceof TlaEmiRecipeCategory c) {
-                        return c.category;
-                    }
-                    return new BuiltInCategory(category, new int[] {recipe.getDisplayWidth(), recipe.getDisplayHeight() });
-                }, recipe));
+                return predicate.test(recipeOf(recipe));
             });
         }
 

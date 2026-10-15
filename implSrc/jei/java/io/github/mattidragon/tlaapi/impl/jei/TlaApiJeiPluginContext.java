@@ -3,8 +3,10 @@ package io.github.mattidragon.tlaapi.impl.jei;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
-import io.github.mattidragon.tlaapi.api.StackDragHandler;
-import io.github.mattidragon.tlaapi.api.gui.TlaBounds;
+import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
+import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
+import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
+import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
@@ -37,8 +39,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-
-public class TlaApiJeiPluginContext implements PluginContext {
+class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBackend {
     final Map<Identifier, BuiltInTlaCategory> builtInCategories = new HashMap<>();
     final List<TlaCategory> categories = new ArrayList<>();
     final List<BiFunction<MinecraftClient, RecipeEntry<?>, Stream<TlaRecipe>>> recipeFunctions = new ArrayList<>();
@@ -69,8 +70,19 @@ public class TlaApiJeiPluginContext implements PluginContext {
         }
     };
 
+    private PluginLoader.BootstrapContext bootstrapContext;
+
     TlaApiJeiPluginContext() {
-        PluginLoader.loadPlugins(this);
+        ClientPluginLoader.loadPlugins(PluginLoader.loadPlugins(RecipeViewer.JEI, bootstrapContext -> {
+            this.bootstrapContext = bootstrapContext;
+            this.bootstrapContext.registerCategoryProvider(builtInCategories::get);
+            return this;
+        }));
+    }
+
+    @Override
+    public PluginContext getContext() {
+        return this;
     }
 
     @Override
@@ -79,6 +91,7 @@ public class TlaApiJeiPluginContext implements PluginContext {
             return;
         }
         categories.add(category);
+        bootstrapContext.registerCategory(category);
     }
 
     @Override

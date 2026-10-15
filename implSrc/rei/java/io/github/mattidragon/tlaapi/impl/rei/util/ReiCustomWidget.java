@@ -1,6 +1,5 @@
 package io.github.mattidragon.tlaapi.impl.rei.util;
 
-import io.github.mattidragon.tlaapi.api.gui.CustomTlaWidget;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.REIRuntime;
 import me.shedaniel.rei.api.client.gui.widgets.WidgetWithBounds;
@@ -8,6 +7,8 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 
 import java.util.List;
+
+import io.github.mattidragon.tlaapi.api.client.gui.CustomTlaWidget;
 
 public class ReiCustomWidget extends WidgetWithBounds {
     private final CustomTlaWidget widget;
