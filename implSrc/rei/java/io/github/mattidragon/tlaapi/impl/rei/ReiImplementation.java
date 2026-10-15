@@ -41,13 +41,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class ReiImplementation implements PluginContext {
     public static ReiImplementation INSTANCE;
 
-    private final Map<CategoryIdentifier<?>, BuiltInCategory> builtInCategories = new HashMap<>();
+    private final Map<CategoryIdentifier<?>, WrappedEmiCategory> builtInCategories = new HashMap<>();
     private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
+    private final Map<CategoryIdentifier<?>, TlaDisplayCategory> categoryIdentifiers = new HashMap<>();
     private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     private final List<RecipeGenerator<?>> recipeGenerators = new ArrayList<>();
     private final List<Function<MinecraftServer, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
@@ -110,20 +112,17 @@ public class ReiImplementation implements PluginContext {
             .forEach(registry::add);
 
         builtInCategories.forEach((id, category) -> {
-            List<? extends Display> displays = registry.get(id);
-            if (!displays.isEmpty()) {
-                category.display().set(displays.get(0));
-            }
+            category.display().set(() -> registry.get(id));
         });
     }
 
     TlaCategory lookupCategory(CategoryIdentifier<?> categoryId) {
-        TlaDisplayCategory tla = categories.getOrDefault(categoryId, null);
+        TlaDisplayCategory tla = categoryIdentifiers.get(categoryId);
         if (tla != null) {
             return tla.getCategory();
         }
-        TlaCategory builtIn = builtInCategories.getOrDefault(categoryId, null);
-        return builtIn == null ? new BuiltInCategory(categoryId, new int[] {0, }) : builtIn;
+        TlaCategory builtIn = builtInCategories.get(categoryId);
+        return builtIn == null ? new WrappedEmiCategory(categoryId, new int[] { 0, 0 }) : builtIn;
     }
 
     void registerItemComparators(ItemComparatorRegistry registry) {
@@ -136,7 +135,7 @@ public class ReiImplementation implements PluginContext {
 
     @Override
     public void addCategory(TlaCategory category) {
-        if (category instanceof BuiltInCategory) {
+        if (category instanceof WrappedEmiCategory) {
             return;
         }
         categories.put(category, new TlaDisplayCategory(category));
@@ -169,11 +168,11 @@ public class ReiImplementation implements PluginContext {
             case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
             case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
             case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
-        }).map(identifier -> builtInCategories.computeIfAbsent(identifier, id -> new BuiltInCategory(id, type.getSize())));
+        }).map(identifier -> builtInCategories.computeIfAbsent(identifier, id -> new WrappedEmiCategory(id, type.getSize())));
     }
 
     public CategoryIdentifier<?> getCategoryIdentifier(TlaCategory category) {
-        if (category instanceof BuiltInCategory builtIn) {
+        if (category instanceof WrappedEmiCategory builtIn) {
             return builtIn.id();
         }
         return Objects.requireNonNull(categories.get(category), "Category " + category + " not registered").getCategoryIdentifier();
@@ -227,16 +226,16 @@ public class ReiImplementation implements PluginContext {
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
     private record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
     public record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
-    private record BuiltInCategory(
+    private record WrappedEmiCategory(
             CategoryIdentifier<?> id,
             int[] fallbackSize,
             AtomicReference<DisplayCategory<?>> category,
-            AtomicReference<Display> display
+            AtomicReference<Supplier<List<? extends Display>>> display
     ) implements TlaCategory {
         private static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
 
-        public BuiltInCategory(CategoryIdentifier<?> id, int[] fallbackSize) {
-            this(id, fallbackSize, new AtomicReference<>(null), new AtomicReference<>(null));
+        public WrappedEmiCategory(CategoryIdentifier<?> id, int[] fallbackSize) {
+            this(id, fallbackSize, new AtomicReference<>(null), new AtomicReference<>(List::of));
         }
 
         @Override
@@ -250,12 +249,10 @@ public class ReiImplementation implements PluginContext {
             return i == null ? fallbackSize[1] : i.getDisplayHeight();
         }
 
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         @Override
         public int getDisplayWidth() {
             DisplayCategory<?> i = category.get();
-            Display d = display.get();
-            return i == null || d == null ? fallbackSize[0] : ((DisplayCategory)i).getDisplayWidth(d);
+            return i == null ? fallbackSize[0] : display.get().get().stream().mapToInt(d -> i.getDisplayWidth(Untyped.cast(d))).max().orElse(fallbackSize[0]);
         }
 
         @Override
