@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
 import io.github.mattidragon.tlaapi.api.client.gui.*;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;

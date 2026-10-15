@@ -1,6 +1,5 @@
 package io.github.mattidragon.tlaapi.api.recipe;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
@@ -15,8 +14,6 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.context.ContextParameterMap;
-import net.minecraft.world.World;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -24,6 +21,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import com.mojang.serialization.Codec;
+
+import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 
 /**
  * Represents a list of values that can be held by a single slot in a recipe.
@@ -67,7 +66,7 @@ public record TlaIngredient (Collection<TlaStack> stacks) {
      * Creates a new ingredient from the provided vanilla ingredient.
      */
     public static TlaIngredient ofSlotDisplay(SlotDisplay display) {
-        ContextParameterMap parameters = SlotDisplayContexts.createParameters((World)Objects.requireNonNull(MinecraftClient.getInstance().world));
+        ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getServer()).getOverworld());
         return new TlaIngredient(display.appendStacks(parameters, TlaStack.DISPLAYED_ITEM_FACTORY).toList());
     }
 

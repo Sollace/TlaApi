@@ -1,6 +1,6 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
-import io.github.mattidragon.tlaapi.api.client.gui.TextureConfig;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import mezz.jei.api.gui.drawable.IDrawableStatic;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.RenderLayer;

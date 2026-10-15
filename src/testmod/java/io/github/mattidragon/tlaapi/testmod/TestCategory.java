@@ -1,6 +1,6 @@
 package io.github.mattidragon.tlaapi.testmod;
 
-import io.github.mattidragon.tlaapi.api.client.gui.TextureConfig;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import net.minecraft.item.Items;

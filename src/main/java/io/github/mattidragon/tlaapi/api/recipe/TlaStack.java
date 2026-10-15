@@ -3,7 +3,6 @@ package io.github.mattidragon.tlaapi.api.recipe;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.component.ComponentChanges;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
@@ -18,8 +17,6 @@ import net.minecraft.recipe.display.SlotDisplay;
 import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.context.ContextParameterMap;
-import net.minecraft.world.World;
-
 import java.util.Objects;
 import java.util.OptionalDouble;
 
@@ -28,6 +25,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
+import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.impl.MoreCodecs;
 
 /**
@@ -108,7 +106,7 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
     }
 
     public static TlaItemStack of(SlotDisplay display) {
-        ContextParameterMap parameters = SlotDisplayContexts.createParameters((World)Objects.requireNonNull(MinecraftClient.getInstance().world));
+        ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getServer()).getOverworld());
         return of(display.getFirst(parameters));
     }
 

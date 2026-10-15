@@ -26,7 +26,6 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -37,6 +36,7 @@ import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -137,8 +137,8 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public void addGenerator(Function<MinecraftClient, Stream<TlaRecipe>> generator) {
-            generator.apply(MinecraftClient.getInstance()).forEach(tlaRecipe -> {
+        public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
+            generator.apply(bootstrapContext.getServer()).forEach(tlaRecipe -> {
                 var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
                 registry.addRecipe(emiRecipe);
             });

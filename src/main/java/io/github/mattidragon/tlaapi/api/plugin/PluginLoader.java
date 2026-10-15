@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.impl.ImplementationOnly;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
 /**
@@ -27,11 +28,17 @@ public final class PluginLoader {
         return TlaApi.getCategory(id);
     }
 
+    public static MinecraftServer getServer() {
+        return TlaApi.getServer();
+    }
+
     public interface BootstrapFunction<C extends PluginContext> {
         C bootstrap(BootstrapContext context);
     }
 
     public interface BootstrapContext {
+        MinecraftServer getServer();
+
         void registerCategory(TlaCategory category);
 
         void registerCategoryProvider(Function<Identifier, @Nullable TlaCategory> provider);

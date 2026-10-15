@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.function.DoubleSupplier;
 
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
-import io.github.mattidragon.tlaapi.api.client.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContext;
 import io.github.mattidragon.tlaapi.api.client.plugin.TlaApiClientPlugin;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.testmod.content.TestScreen;

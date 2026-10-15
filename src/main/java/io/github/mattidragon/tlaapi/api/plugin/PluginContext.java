@@ -6,11 +6,11 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
 import java.util.Optional;
@@ -66,11 +66,11 @@ public interface PluginContext {
 
     /**
      * Adds a recipe generator that can create recipe entries in the recipe viewer from any source.
-     * The generator is provided the client instance for convenience.
+     * The generator is provided the server instance for convenience.
      * @see TlaRecipe
      * @see #addRecipeGenerator
      */
-    void addGenerator(Function<MinecraftClient, Stream<TlaRecipe>> generator);
+    void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator);
 
     /**
      * Adds a predicate to run on all current and future TlaStacks to prevent certain ones from being added to the sidebar.

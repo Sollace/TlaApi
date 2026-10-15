@@ -77,8 +77,8 @@ public class TlaApiJeiPlugin implements IModPlugin {
         Stream.concat(
                 (server == null ? Internal.getClientSyncedRecipes().recipes() : server.getRecipeManager().values())
                     .stream()
-                    .flatMap(entry -> context.recipeFunctions.stream().flatMap(generator -> generator.apply(client, entry))),
-                    context.recipeGenerators.stream().flatMap(generator -> generator.apply(client))
+                    .flatMap(entry -> context.recipeFunctions.stream().flatMap(generator -> generator.apply(entry))),
+                    context.recipeGenerators.stream().flatMap(generator -> generator.apply(server))
             )
             .map(recipe -> new PreparedRecipe(jeiHelpers, recipe))
             .collect(Collectors.groupingBy(PreparedRecipe::getCategory))

@@ -2,7 +2,7 @@ package io.github.mattidragon.tlaapi.impl.rei.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import io.github.mattidragon.tlaapi.api.client.gui.TextureConfig;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import me.shedaniel.clothconfig2.api.animator.NumberAnimator;
 import me.shedaniel.clothconfig2.api.animator.ValueAnimator;
 import me.shedaniel.math.Rectangle;

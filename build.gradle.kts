@@ -156,10 +156,12 @@ configurations.all {
 tasks.processResources  {
     inputs.property("version", project.version)
     filesMatching("fabric.mod.json") {
-        expand("version" to project.version)
-        expand("loader_versions" to loaderVersion)
-        expand("fabric_version" to fabricVersion)
-        expand("minecraft_version" to minecraftVersion)
+        expand(
+          "version" to project.version,
+          "loader_version" to loaderVersion,
+          "fabric_version" to fabricVersion,
+          "minecraft_version" to minecraftVersion
+        )
     }
 }
 
@@ -168,6 +170,18 @@ java {
         languageVersion = JavaLanguageVersion.of(21)
     }
     withSourcesJar()
+}
+
+
+val apiJar = tasks.register<Jar>("apiJar") {
+  archiveClassifier = "api"
+  dependsOn(tasks.remapJar)
+  from(tasks.remapJar)
+  include("io/github.mattidragon/tlaapi/api/**")
+}
+
+tasks.build {
+  dependsOn(apiJar)
 }
 
 tasks.jar {

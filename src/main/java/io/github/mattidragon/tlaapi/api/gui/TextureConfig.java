@@ -1,4 +1,4 @@
-package io.github.mattidragon.tlaapi.api.client.gui;
+package io.github.mattidragon.tlaapi.api.gui;
 
 import net.minecraft.util.Identifier;
 

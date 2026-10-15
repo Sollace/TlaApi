@@ -27,7 +27,6 @@ import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
 import me.shedaniel.rei.api.common.registry.display.DisplayRegistryCommon;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.Display;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
@@ -35,6 +34,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
@@ -50,7 +50,7 @@ public class ReiImplementation implements PluginContext {
     private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
     private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     private final List<RecipeGenerator<?>> recipeGenerators = new ArrayList<>();
-    private final List<Function<MinecraftClient, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
+    private final List<Function<MinecraftServer, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
     private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
     private final List<Comparator<Fluid, FluidStack>> fluidComparators = new ArrayList<>();
 
@@ -105,7 +105,7 @@ public class ReiImplementation implements PluginContext {
                         .toList());
 
         customGenerators.stream()
-            .flatMap(generator -> generator.apply(MinecraftClient.getInstance()))
+            .flatMap(generator -> generator.apply(bootstrapContext.getServer()))
             .map(TlaDisplay::of)
             .forEach(registry::add);
 
@@ -190,7 +190,7 @@ public class ReiImplementation implements PluginContext {
     }
 
     @Override
-    public void addGenerator(Function<MinecraftClient, Stream<TlaRecipe>> generator) {
+    public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
         customGenerators.add(generator);
     }
 

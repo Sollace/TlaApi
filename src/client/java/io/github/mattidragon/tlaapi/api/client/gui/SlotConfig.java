@@ -13,7 +13,6 @@ import java.util.List;
  * Some options might not do anything in some recipe viewers. For example {@link #markInput()} doesn't do anything on EMI as slots default to being inputs.
  * @see GuiBuilder#addSlot(TlaIngredient, int, int)
  */
-@SuppressWarnings("UnusedReturnValue")
 @PluginsExtend
 public interface SlotConfig extends WidgetConfig {
     /**

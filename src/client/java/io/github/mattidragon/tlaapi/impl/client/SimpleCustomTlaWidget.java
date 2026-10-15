@@ -1,4 +1,4 @@
-package io.github.mattidragon.tlaapi.impl;
+package io.github.mattidragon.tlaapi.impl.client;
 
 import io.github.mattidragon.tlaapi.api.client.gui.CustomTlaWidget;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;

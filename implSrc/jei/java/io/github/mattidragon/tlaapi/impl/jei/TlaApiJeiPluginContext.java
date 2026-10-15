@@ -22,7 +22,6 @@ import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.fabric.constants.FabricTypes;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.ISubtypeRegistration;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
@@ -30,10 +29,10 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -42,8 +41,8 @@ import java.util.stream.Stream;
 class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBackend {
     final Map<Identifier, BuiltInTlaCategory> builtInCategories = new HashMap<>();
     final List<TlaCategory> categories = new ArrayList<>();
-    final List<BiFunction<MinecraftClient, RecipeEntry<?>, Stream<TlaRecipe>>> recipeFunctions = new ArrayList<>();
-    final List<Function<MinecraftClient, Stream<TlaRecipe>>> recipeGenerators = new ArrayList<>();
+    final List<Function<RecipeEntry<?>, Stream<TlaRecipe>>> recipeFunctions = new ArrayList<>();
+    final List<Function<MinecraftServer, Stream<TlaRecipe>>> recipeGenerators = new ArrayList<>();
     final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     final List<ClickAreaTuple<?>> clickAreas = new ArrayList<>();
     final List<GhostHandler<?>> ghostHandlers = new ArrayList<>();
@@ -126,14 +125,14 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
 
     @Override
     public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
-        recipeFunctions.add((client, entry) -> entry.value().getDisplays().stream()
+        recipeFunctions.add(entry -> entry.value().getDisplays().stream()
                     .filter(display -> display.serializer() == type)
                     .map(Untyped::<RecipeDisplay, T>cast)
                     .flatMap(generator));
     }
 
     @Override
-    public void addGenerator(Function<MinecraftClient, Stream<TlaRecipe>> generator) {
+    public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
         recipeGenerators.add(generator);
     }
 

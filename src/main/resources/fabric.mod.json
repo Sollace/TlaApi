@@ -20,6 +20,9 @@
   "icon": "assets/tla-api/icon.png",
   "environment": "*",
   "entrypoints": {
+    "main": [
+      "io.github.mattidragon.tlaapi.impl.TlaApi"
+    ],
     "emi": [
       "io.github.mattidragon.tlaapi.impl.emi.TlaApiEmiPlugin"
     ],

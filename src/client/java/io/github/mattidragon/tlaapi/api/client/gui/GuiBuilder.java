@@ -1,9 +1,10 @@
 package io.github.mattidragon.tlaapi.api.client.gui;
 
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
-import io.github.mattidragon.tlaapi.impl.SimpleCustomTlaWidget;
+import io.github.mattidragon.tlaapi.impl.client.SimpleCustomTlaWidget;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.text.Text;
 

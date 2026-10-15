@@ -1,6 +1,6 @@
 package io.github.mattidragon.tlaapi.api.recipe;
 
-import io.github.mattidragon.tlaapi.api.client.gui.TextureConfig;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.impl.ImplementationOnly;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
