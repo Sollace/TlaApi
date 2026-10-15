@@ -9,6 +9,7 @@ import io.github.mattidragon.tlaapi.impl.ImplementationOnly;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 
 /**
  * Provides implementations with the ability to load plugins.
@@ -28,8 +29,8 @@ public final class PluginLoader {
         return TlaApi.getCategory(id);
     }
 
-    public static MinecraftServer getServer() {
-        return TlaApi.getServer();
+    public static World getWorld() {
+        return TlaApi.getWorld();
     }
 
     public interface BootstrapFunction<C extends PluginContext> {

@@ -66,10 +66,10 @@ public record TlaIngredient (Collection<? extends TlaStack> stacks) {
      * Creates a new ingredient from the provided vanilla ingredient.
      */
     public static TlaIngredient ofSlotDisplay(SlotDisplay display) {
-        ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getServer()).getOverworld());
         if (display instanceof EmptySlotDisplay) {
             return EMPTY;
         }
+        ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getWorld()));
         return ofStacks(display.appendStacks(parameters, TlaStack.DISPLAYED_ITEM_FACTORY).filter(i -> !i.isEmpty()).toList());
     }
 

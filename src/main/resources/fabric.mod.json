@@ -23,6 +23,9 @@
     "main": [
       "io.github.mattidragon.tlaapi.impl.TlaApi"
     ],
+    "client": [
+      "io.github.mattidragon.tlaapi.impl.client.TlaApiClient"
+    ],
     "emi": [
       "io.github.mattidragon.tlaapi.impl.emi.TlaApiEmiPlugin"
     ],

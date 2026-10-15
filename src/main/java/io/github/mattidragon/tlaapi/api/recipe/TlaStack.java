@@ -109,11 +109,11 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
         return item.matchesId(Items.AIR.getRegistryEntry().registryKey().getValue()) ? empty() : of(item.value(), 1);
     }
 
-        ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getServer()).getOverworld());
     public static TlaStack of(SlotDisplay display) {
         if (display instanceof EmptySlotDisplay) {
             return empty();
         }
+        ContextParameterMap parameters = SlotDisplayContexts.createParameters(Objects.requireNonNull(PluginLoader.getWorld()));
         return of(display.getFirst(parameters));
     }
 

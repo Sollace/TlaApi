@@ -11,6 +11,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
+import net.minecraft.world.World;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,6 +20,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -30,6 +32,7 @@ public class TlaApi implements ModInitializer {
     private static final Map<RecipeViewer, Bootsrap> VIEWER_REGISTRY = new HashMap<>();
 
     private static final AtomicReference<MinecraftServer> SERVER = new AtomicReference<>(null);
+    public static Supplier<World> WORLD = () -> Objects.requireNonNull(SERVER.get()).getOverworld();
 
     public static TlaCategory getCategory(Identifier id) {
         synchronized (VIEWER_REGISTRY) {
@@ -40,8 +43,9 @@ public class TlaApi implements ModInitializer {
         }
     }
 
-    public static MinecraftServer getServer() {
-        return SERVER.get();
+    public static World getWorld() {
+        var server = SERVER.get();
+        return server != null ? server.getOverworld() : WORLD.get();
     }
 
     public static <C extends PluginContext> C loadPlugins(RecipeViewer viewer, BootstrapFunction<C> implementation) {
@@ -66,7 +70,7 @@ public class TlaApi implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTING.register(SERVER::set);
+        ServerLifecycleEvents.SERVER_STARTED.register(SERVER::set);
     }
 
     private record Bootsrap(
