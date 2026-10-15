@@ -125,7 +125,7 @@ dependencies {
     add("modReiCompileOnly", libs.rei.config)
 
     if (enabledRecipeMods.indexOf("rei") > -1) {
-      add("modEmiRuntimeOnly", libs.rei.all)
+      add("modReiRuntimeOnly", libs.rei.all)
     }
 
     add("modEmiCompileOnly", libs.emi.withClassifier("api"))
@@ -134,13 +134,11 @@ dependencies {
       add("modEmiRuntimeOnly", libs.emi)
     }
 
+    // Because of issues with the remapping of the jei api, we have to depend on the fat jar instead (https://github.com/mezz/JustEnoughItems/issues/2891)
+    mappedDependency("https://maven.blamejared.com", libs.jei.fabric) { path -> path.contains("/api/") || path.contains("DrawableAnimated") }
+    add("modJeiCompileOnly", libs.jei.api.fabric)
     if (enabledRecipeMods.indexOf("jei") > -1) {
-      add("modJeiCompileOnly", libs.jei.fabric)
       add("modJeiRuntimeOnly", libs.jei.fabric)
-    } else {
-      // Because of issues with the remapping of the jei api, we have to depend on the fat jar instead (https://github.com/mezz/JustEnoughItems/issues/2891)
-      mappedDependency("https://maven.blamejared.com", libs.jei.fabric) { path -> path.contains("/api/") || path.contains("DrawableAnimated") }
-      add("modJeiCompileOnly", libs.jei.api.fabric)
     }
 
     mappedDependency("https://api.modrinth.com/maven", libs.eiv.fabric) { path -> path.contains("/api/") }
@@ -188,10 +186,10 @@ publishing {
 
 fun mappedDependency(mavenServer : String, artefactName : Provider<MinimalExternalModuleDependency>, pathFilter : Predicate<String>) {
     val downloadArtefact = artefactName.get().toString().split(":")
-    val downloadUri = URI.create("${mavenServer}/${downloadArtefact[0].replace(".", "/")}/${downloadArtefact[1]}/${downloadArtefact[2]}/${downloadArtefact[1]}-${downloadArtefact[2]}.jar")
     val outputLocation = nioPath.of("lib/${downloadArtefact[1]}-api-${downloadArtefact[2]}.jar") as java.nio.file.Path;
 
     if (!Files.exists(outputLocation)) {
+      val downloadUri = URI.create("${mavenServer}/${downloadArtefact[0].replace(".", "/")}/${downloadArtefact[1]}/${downloadArtefact[2]}/${downloadArtefact[1]}-${downloadArtefact[2]}.jar")
       ZipInputStream(downloadUri.toURL().openStream()).use { inZipStream ->
         ZipOutputStream(Files.newOutputStream(outputLocation)).use { outZipStream ->
             val buffer = ByteArray(16384)
@@ -230,4 +228,18 @@ fun mappedDependency(mavenServer : String, artefactName : Provider<MinimalExtern
          }
       }
    }
+
+   val sourcesOutputLocation = nioPath.of("lib/${downloadArtefact[1]}-api-${downloadArtefact[2]}-sources.jar") as java.nio.file.Path;
+   if (!Files.exists(sourcesOutputLocation)) {
+      val sourcesDownloadUri = URI.create("${mavenServer}/${downloadArtefact[0].replace(".", "/")}/${downloadArtefact[1]}/${downloadArtefact[2]}/${downloadArtefact[1]}-${downloadArtefact[2]}-sources.jar")
+      try {
+        sourcesDownloadUri.toURL().openStream().use { inSourceStream ->
+          Files.newOutputStream(sourcesOutputLocation).use { outFileStream ->
+            inSourceStream.transferTo(outFileStream)
+          }
+        }
+      } catch (e : IOException) {
+        System.out.println(e)
+      }
+    }
 }
