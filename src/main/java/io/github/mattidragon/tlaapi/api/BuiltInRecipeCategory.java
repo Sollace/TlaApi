@@ -1,5 +1,8 @@
 package io.github.mattidragon.tlaapi.api;
 
+import io.github.mattidragon.tlaapi.api.annotation.SupportsExcept;
+import io.github.mattidragon.tlaapi.api.annotation.SupportsOnly;
+
 /**
  * Identifiers for the built-in recipe categories that come with the game.
  *
@@ -14,40 +17,56 @@ public enum BuiltInRecipeCategory {
     CAMPFIRE_COOKING(false),
     STONECUTTING(false),
     SMITHING(false),
+    @SupportsExcept("eiv")
     ANVIL_REPAIRING(false),
+    @SupportsExcept({"rei", "eiv"})
     GRINDING(false),
     BREWING(false),
     SMELTING_FUEL(false),
     BLASTING_FUEL(false),
     SMOKING_FUEL(false),
+    @SupportsExcept({ "eiv" })
     COMPOSTING(false),
+    @SupportsExcept("eiv")
     INFO(false),
+    @SupportsExcept({"rei", "eiv"})
     WORLD_INTERACTION_OTHER(true),
+    @SupportsExcept("eiv")
     WORLD_INTERACTION_STRIPPING(true),
+    @SupportsExcept("eiv")
     WORLD_INTERACTION_TILLING(true),
+    @SupportsExcept("eiv")
     WORLD_INTERACTION_FLATTENING(true),
+    @SupportsExcept("eiv")
     WORLD_INTERACTION_WAXING(true),
+    @SupportsExcept("eiv")
     WORLD_INTERACTION_SCRAPING(true),
     /**
      * @implNote Only supported by REI
      */
+    @SupportsOnly("rei")
     WORLD_INTERACTION_OXIDIZING(true),
     /**
      * @implNote Only supported by REI
      */
+    @SupportsOnly("rei")
     WORLD_INTERACTION_DEOXIDIZING(true),
     /**
      * @implNote Only supported by REI
      */
+    @SupportsOnly("rei")
     WORLD_INTERACTION_BEACON_PYRAMID(true),
     /**
      * @implNote Only supported by REI
      */
+    @SupportsOnly("rei")
     BEACON_PAYMENT(false),
+    @SupportsOnly("eiv")
     VILLAGER_TRADING(false),
     /**
      * Recipe category for items dropped by entities
      */
+    @SupportsOnly("eiv")
     LOOT(true);
 
     private final boolean worldInteraction;

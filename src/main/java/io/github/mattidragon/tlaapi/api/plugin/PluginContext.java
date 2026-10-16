@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.api.plugin;
 
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
+import io.github.mattidragon.tlaapi.api.annotation.SupportsExcept;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
@@ -81,11 +82,13 @@ public interface PluginContext {
     /**
      * Adds a predicate to run on all current and future TlaStacks to prevent certain ones from being added to the sidebar.
      */
+    @SupportsExcept({ "eiv", "jei" })
     void removeStacks(Predicate<TlaStack> predicate);
 
     /**
      * Adds a predicate to run on all current and future TlaStacks to prevent matching ones from being added to the sidebar.
      */
+    @SupportsExcept({ "eiv", "jei" })
     default void removeStacks(TlaStack stack) {
         removeStacks(s -> s.equals(stack));
     }
@@ -93,11 +96,13 @@ public interface PluginContext {
     /**
      * Adds a predicate to run on all current and future recipes to prevent certain ones from being added.
      */
+    @SupportsExcept({ "eiv", "jei" })
     void removeRecipes(Predicate<TlaRecipe> predicate);
 
     /**
      * Adds a predicate to run on all current and future recipes to prevent certain ones with the given identifier from being added.
      */
+    @SupportsExcept({ "eiv" })
     default void removeRecipes(Identifier id) {
         removeRecipes(r -> r.getId() != null && id.equals(r.getId().getValue()));
     }
@@ -106,14 +111,18 @@ public interface PluginContext {
      * Gets a registry used for registering the default comparisons for items and blocks.
      *
      * @see TlaStackComparison
+     * @implNote EIV does not support custom comparisons so any registrations done through here will be ignored.
      */
+    @SupportsExcept({ "eiv" })
     Comparisons<ItemConvertible> getItemComparisons();
 
     /**
      * Gets a registry used for registering the default comparisons for fluids.
      *
      * @see TlaStackComparison
+     * @implNote EIV does not support custom comparisons so any registrations done through here will be ignored.
      */
+    @SupportsExcept({ "eiv" })
     Comparisons<Fluid> getFluidComparisons();
 
     /**

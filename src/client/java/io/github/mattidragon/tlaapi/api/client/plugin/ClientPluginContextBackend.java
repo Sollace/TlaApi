@@ -3,6 +3,7 @@ package io.github.mattidragon.tlaapi.api.client.plugin;
 import java.util.List;
 import java.util.function.Function;
 
+import io.github.mattidragon.tlaapi.api.annotation.SupportsExcept;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
@@ -29,6 +30,7 @@ public interface ClientPluginContextBackend {
      * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
      * <br>JEI doesn't provide the ability to add click areas to non-handled screens, as such this method won't work there.
      */
+    @SupportsExcept({ "eiv", "emi", "jei" })
     <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
 
     /**
@@ -40,6 +42,7 @@ public interface ClientPluginContextBackend {
      * @see #addClickArea(Class, TlaCategory, Function)
      * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
      */
+    @SupportsExcept({ "eiv", "emi" })
     <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
 
     /**
@@ -47,6 +50,7 @@ public interface ClientPluginContextBackend {
      * Stack drag handlers are used to handle dragging stacks from the recipe viewer to a screen,
      * usually for setting filters or similar things.
      */
+    @SupportsExcept("eiv")
     <T extends Screen> void addStackDragHandler(Class<T> clazz, StackDragHandler<T> handler);
 
     /**
@@ -56,6 +60,7 @@ public interface ClientPluginContextBackend {
      * Usually calling this is unnecessary as the default implementations based on handled screens are sufficient.
      * @see #addExclusionZoneProvider
      */
+    @SupportsExcept({ "eiv" })
     default <T extends Screen> void addScreenSizeProvider(Class<T> clazz, Function<T, TlaBounds> provider) {
         addExclusionZoneProvider(clazz, screen -> List.of(provider.apply(screen)));
     }
@@ -64,5 +69,6 @@ public interface ClientPluginContextBackend {
      * Adds an exclusion zone provider for a given screen type.
      * This prevents recipe viewers from extending onto areas of the screen.
      */
+    @SupportsExcept({ "eiv" })
     <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider);
 }
