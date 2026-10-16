@@ -1,16 +1,18 @@
 package io.github.mattidragon.tlaapi.impl.rei;
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 import dev.architectury.fluid.FluidStack;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
-import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -27,7 +29,6 @@ import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
 import me.shedaniel.rei.api.common.registry.display.DisplayRegistryCommon;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.Display;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
@@ -36,16 +37,47 @@ import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
-
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.jetbrains.annotations.Nullable;
 
 public class ReiImplementation implements PluginContext {
     public static ReiImplementation INSTANCE;
+
+    private static final BiMap<BuiltInRecipeCategory, CategoryIdentifier<?>> VANILLA_CATEGORIES = HashBiMap.create(Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
+        return Map.entry(type, switch (type) {
+            case CRAFTING -> CategoryIdentifier.of("minecraft", "plugins/crafting");
+            case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
+            case BLASTING -> CategoryIdentifier.of("minecraft", "plugins/blasting");
+            case SMOKING -> CategoryIdentifier.of("minecraft", "plugins/smoking");
+            case CAMPFIRE_COOKING -> CategoryIdentifier.of("minecraft", "plugins/campfire");
+            case STONECUTTING -> CategoryIdentifier.of("minecraft", "plugins/stone_cutting");
+            case SMITHING -> CategoryIdentifier.of("minecraft", "plugins/smithing");
+            case ANVIL_REPAIRING -> CategoryIdentifier.of("minecraft", "plugins/anvil");
+            case GRINDING -> null;//RecipeTypes.GRINDING;
+            case BREWING -> CategoryIdentifier.of("minecraft", "plugins/brewing");
+            case BEACON_PAYMENT -> CategoryIdentifier.of("minecraft", "plugins/beacon_payment");
+            case WORLD_INTERACTION_BEACON_PYRAMID -> CategoryIdentifier.of("minecraft", "plugins/beacon_base");
+            case WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
+            case WORLD_INTERACTION_STRIPPING -> CategoryIdentifier.of("minecraft", "plugins/stripping");
+            case WORLD_INTERACTION_SCRAPING -> CategoryIdentifier.of("minecraft", "plugins/wax_scraping");
+            case WORLD_INTERACTION_TILLING -> CategoryIdentifier.of("minecraft", "plugins/tilling");
+            case WORLD_INTERACTION_FLATTENING -> CategoryIdentifier.of("minecraft", "plugins/pathing");
+            case WORLD_INTERACTION_WAXING -> CategoryIdentifier.of("minecraft", "plugins/waxing");
+            case WORLD_INTERACTION_OXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidizing");
+            case WORLD_INTERACTION_DEOXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidation_scraping");
+            case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
+            case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
+            case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
+        });
+    }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length))));
+
 
     private final Map<CategoryIdentifier<?>, WrappedEmiCategory> builtInCategories = new HashMap<>();
     private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
@@ -67,6 +99,10 @@ public class ReiImplementation implements PluginContext {
             }));
         }
 
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.REI;
+        }
     };
     private final Comparisons<Fluid> fluidComparisons = new Comparisons<>() {
         @Override
@@ -74,6 +110,11 @@ public class ReiImplementation implements PluginContext {
             fluidComparators.add(new Comparator<>(fluid, (context, stack) -> {
                 return comparison.hashFunction().hash(ReiUtil.convertStack(stack));
             }));
+        }
+
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.REI;
         }
     };
 
@@ -121,8 +162,10 @@ public class ReiImplementation implements PluginContext {
         if (tla != null) {
             return tla.getCategory();
         }
-        TlaCategory builtIn = builtInCategories.get(categoryId);
-        return builtIn == null ? new WrappedEmiCategory(categoryId, new int[] { 0, 0 }) : builtIn;
+
+        return Optional.ofNullable(VANILLA_CATEGORIES.inverse().get(categoryId))
+            .flatMap(this::getVanillaCategory)
+            .orElseGet(() -> builtInCategories.computeIfAbsent(categoryId, i -> new WrappedEmiCategory(null, i, new int[] { 0, 0 })));
     }
 
     void registerItemComparators(ItemComparatorRegistry registry) {
@@ -135,40 +178,29 @@ public class ReiImplementation implements PluginContext {
 
     @Override
     public void addCategory(TlaCategory category) {
-        if (category instanceof WrappedEmiCategory) {
+        if (bootstrapContext.getOwnerOf(category) != null) {
             return;
         }
-        categories.put(category, new TlaDisplayCategory(category));
+        var displayCategory = new TlaDisplayCategory(category);
+        categories.put(category, displayCategory);
+        categoryIdentifiers.put(displayCategory.getCategoryIdentifier(), displayCategory);
         bootstrapContext.registerCategory(category);
     }
 
     @Override
     public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
-        return Optional.ofNullable(switch (type) {
-            case CRAFTING -> CategoryIdentifier.of("minecraft", "plugins/crafting");
-            case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
-            case BLASTING -> CategoryIdentifier.of("minecraft", "plugins/blasting");
-            case SMOKING -> CategoryIdentifier.of("minecraft", "plugins/smoking");
-            case CAMPFIRE_COOKING -> CategoryIdentifier.of("minecraft", "plugins/campfire");
-            case STONECUTTING -> CategoryIdentifier.of("minecraft", "plugins/stone_cutting");
-            case SMITHING -> CategoryIdentifier.of("minecraft", "plugins/smithing");
-            case ANVIL_REPAIRING -> CategoryIdentifier.of("minecraft", "plugins/anvil");
-            case GRINDING -> null;//RecipeTypes.GRINDING;
-            case BREWING -> CategoryIdentifier.of("minecraft", "plugins/brewing");
-            case BEACON_PAYMENT -> CategoryIdentifier.of("minecraft", "plugins/beacon_payment");
-            case WORLD_INTERACTION_BEACON_PYRAMID -> CategoryIdentifier.of("minecraft", "plugins/beacon_base");
-            case WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
-            case WORLD_INTERACTION_STRIPPING -> CategoryIdentifier.of("minecraft", "plugins/stripping");
-            case WORLD_INTERACTION_SCRAPING -> CategoryIdentifier.of("minecraft", "plugins/wax_scraping");
-            case WORLD_INTERACTION_TILLING -> CategoryIdentifier.of("minecraft", "plugins/tilling");
-            case WORLD_INTERACTION_FLATTENING -> CategoryIdentifier.of("minecraft", "plugins/pathing");
-            case WORLD_INTERACTION_WAXING -> CategoryIdentifier.of("minecraft", "plugins/waxing");
-            case WORLD_INTERACTION_OXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidizing");
-            case WORLD_INTERACTION_DEOXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidation_scraping");
-            case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
-            case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
-            case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
-        }).map(identifier -> builtInCategories.computeIfAbsent(identifier, id -> new WrappedEmiCategory(id, type.getSize())));
+        return Optional.ofNullable(VANILLA_CATEGORIES.get(type))
+                .map(identifier -> builtInCategories.computeIfAbsent(identifier, id -> new WrappedEmiCategory(type, id, type.getSize())));
+    }
+
+    @Override
+    public Optional<BuiltInRecipeCategory> getVanillaCategory(TlaCategory category) {
+        if (category instanceof WrappedEmiCategory c) {
+            return Optional.ofNullable(c.type());
+        }
+
+        RecipeViewer viewer = bootstrapContext.getOwnerOf(category);
+        return viewer == getActiveViewer() ? Optional.empty() : bootstrapContext.getPluginContext(viewer).flatMap(ctx -> ctx.getVanillaCategory(category));
     }
 
     public CategoryIdentifier<?> getCategoryIdentifier(TlaCategory category) {
@@ -225,15 +257,15 @@ public class ReiImplementation implements PluginContext {
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
     private record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
-    public record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
     private record WrappedEmiCategory(
+            @Nullable BuiltInRecipeCategory type,
             CategoryIdentifier<?> id,
             int[] fallbackSize,
             AtomicReference<DisplayCategory<?>> category,
             AtomicReference<Supplier<List<? extends Display>>> display
-    ) implements TlaCategory {
-        public WrappedEmiCategory(CategoryIdentifier<?> id, int[] fallbackSize) {
-            this(id, fallbackSize, new AtomicReference<>(null), new AtomicReference<>(List::of));
+    ) implements TlaCategory, RecipeViewerOwned {
+        public WrappedEmiCategory(@Nullable BuiltInRecipeCategory type, CategoryIdentifier<?> id, int[] fallbackSize) {
+            this(type, id, fallbackSize, new AtomicReference<>(null), new AtomicReference<>(List::of));
         }
 
         @Override
@@ -261,6 +293,11 @@ public class ReiImplementation implements PluginContext {
         @Override
         public CategoryIcon getSimpleIcon() {
             return CategoryIcon.empty();
+        }
+
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.REI;
         }
     }
 }

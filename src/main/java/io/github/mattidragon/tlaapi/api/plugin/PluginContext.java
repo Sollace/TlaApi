@@ -41,6 +41,14 @@ public interface PluginContext {
     Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type);
 
     /**
+     * Gets the vanilla category type corresponding to the provided tla category.
+     * This provides the reverse of the lookup done by {@linkplain PluginContext#getVanillaCategory getVanillaCategory(type)}
+     * @param category
+     * @see BuiltInRecipeCategory
+     */
+    Optional<BuiltInRecipeCategory> getVanillaCategory(TlaCategory category);
+
+    /**
      * Adds a block as the workstation for a recipe category.
      *
      * @param category The recipe category to assign to this workstation.
@@ -114,4 +122,11 @@ public interface PluginContext {
      * Provides users of TLA-api knowledge of which recipe viewer invoked the plugin.
      */
     RecipeViewer getActiveViewer();
+
+    /**
+     * Checks whether the passed object was created by this plugin context.
+     */
+    default boolean owns(Object o) {
+        return o instanceof RecipeViewerOwned r && r.getRecipeViewer().equals(getActiveViewer());
+    }
 }

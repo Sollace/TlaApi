@@ -11,6 +11,7 @@ import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -59,6 +60,11 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
                 return comparison.hashFunction().hash(TlaStack.of(stack)) + "";
             }));
         }
+
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.JEI;
+        }
     };
     final Comparisons<Fluid> fluidComparisons = new Comparisons<>() {
         @Override
@@ -66,6 +72,11 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
             subTypeProviders.add(registration -> registration.registerSubtypeInterpreter(FabricTypes.FLUID_STACK, fluid, (fluidVariant, context) -> {
                 return comparison.hashFunction().hash(TlaStack.bucketOf(fluidVariant.getFluidVariant())) + "";
             }));
+        }
+
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.JEI;
         }
     };
 
@@ -86,7 +97,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
 
     @Override
     public void addCategory(TlaCategory category) {
-        if (category instanceof BuiltInTlaCategory) {
+        if (bootstrapContext.getOwnerOf(category) != null) {
             return;
         }
         categories.add(category);
@@ -115,7 +126,16 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
             case SMOKING_FUEL -> RecipeTypes.SMOKING_FUEL;
             case COMPOSTING -> RecipeTypes.COMPOSTING;
             case INFO -> RecipeTypes.INFORMATION;
-        }).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(jeiCategory, id, type.getSize())));
+        }).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(type, jeiCategory, id, type.getSize())));
+    }
+
+    @Override
+    public Optional<BuiltInRecipeCategory> getVanillaCategory(TlaCategory category) {
+        if (category instanceof BuiltInTlaCategory builtin) {
+            return Optional.of(builtin.category());
+        }
+        var owner = bootstrapContext.getOwnerOf(category);
+        return owner == getActiveViewer() ? Optional.empty() : bootstrapContext.getPluginContext(owner).flatMap(ctx -> ctx.getVanillaCategory(category));
     }
 
     @Override
@@ -192,7 +212,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     record GhostHandler<T extends Screen>(Class<T> clazz, StackDragHandler<T> handler) {}
     record ScreenSizeProvider<T extends Screen>(Class<T> clazz, Function<T, TlaBounds> provider) {}
     record ExclusionZoneProvider<T extends HandledScreen<?>>(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {}
-    record BuiltInTlaCategory(IRecipeType<?> type, Identifier id, int[] size) implements TlaCategory {
+    record BuiltInTlaCategory(BuiltInRecipeCategory category, IRecipeType<?> type, Identifier id, int[] size) implements TlaCategory, RecipeViewerOwned {
         static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
 
         @Override
@@ -218,6 +238,11 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         @Override
         public CategoryIcon getSimpleIcon() {
             return ICON;
+        }
+
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.JEI;
         }
     }
 }

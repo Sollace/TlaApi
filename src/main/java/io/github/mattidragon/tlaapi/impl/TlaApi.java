@@ -3,6 +3,7 @@ package io.github.mattidragon.tlaapi.impl;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.plugin.TlaApiPlugin;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader.BootstrapFunction;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -49,8 +51,9 @@ public class TlaApi implements ModInitializer {
     }
 
     public static <C extends PluginContext> C loadPlugins(RecipeViewer viewer, BootstrapFunction<C> implementation) {
-        var bootstrap = new Bootsrap(new HashMap<>(), new HashSet<>());
+        var bootstrap = new Bootsrap(viewer, new HashMap<>(), new HashSet<>(), new AtomicReference<>(null));
         var context = implementation.bootstrap(bootstrap);
+        bootstrap.pluginContext().set(context);
         var entrypoints = FabricLoader.getInstance().getEntrypoints("tla-api", TlaApiPlugin.class);
         LOGGER.info("Loading {} plugins for {}", entrypoints.size(), context);
         for (var entrypoint : entrypoints) {
@@ -74,12 +77,28 @@ public class TlaApi implements ModInitializer {
     }
 
     private record Bootsrap(
+            RecipeViewer viewer,
             Map<Identifier, TlaCategory> categories,
-            Set<Function<Identifier, TlaCategory>> categoryLookups
+            Set<Function<Identifier, TlaCategory>> categoryLookups,
+            AtomicReference<PluginContext> pluginContext
     ) implements PluginLoader.BootstrapContext {
         @Override
         public void registerCategoryProvider(Function<Identifier, @Nullable TlaCategory> provider) {
             categoryLookups.add(provider);
+        }
+
+        @Nullable
+        @Override
+        public RecipeViewer getOwnerOf(@Nullable Object o) {
+            return o instanceof RecipeViewerOwned r ? r.getRecipeViewer() : null;
+        }
+
+        @Override
+        public Optional<PluginContext> getPluginContext(@Nullable RecipeViewer viewer) {
+            return viewer == null ? Optional.empty() : viewer == viewer() ? Optional.ofNullable(pluginContext.get())
+                    : Optional.ofNullable(VIEWER_REGISTRY.get(viewer))
+                    .map(Bootsrap::pluginContext)
+                    .map(AtomicReference::get);
         }
 
         @Override

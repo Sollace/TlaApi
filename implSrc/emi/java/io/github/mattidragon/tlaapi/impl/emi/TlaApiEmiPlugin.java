@@ -18,6 +18,7 @@ import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.recipe.BasicTlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
@@ -39,13 +40,20 @@ import net.minecraft.registry.RegistryKeys;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import com.google.common.base.Suppliers;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 
 public class TlaApiEmiPlugin implements EmiPlugin {
     @Override
@@ -63,31 +71,8 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         private PluginLoader.BootstrapContext bootstrapContext;
 
-        private EmiImplementation(EmiRegistry registry, PluginLoader.BootstrapContext bootstrapContext) {
-            this.registry = registry;
-            this.bootstrapContext = bootstrapContext;
-            this.bootstrapContext.registerCategoryProvider(id -> builtInCategories.values().stream().filter(category -> category.getId().equals(id)).findFirst().orElse(null));
-        }
-
-        @Override
-        public PluginContext getContext() {
-            return this;
-        }
-
-        @Override
-        public void addCategory(TlaCategory category) {
-            if (category instanceof BuiltInCategory) {
-                return;
-            }
-            var emiCategory = new TlaEmiRecipeCategory(category);
-            categories.put(category, emiCategory);
-            registry.addCategory(emiCategory);
-            bootstrapContext.registerCategory(category);
-        }
-
-        @Override
-        public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
-            return Optional.ofNullable(switch (type) {
+        private final Supplier<BiMap<BuiltInRecipeCategory, EmiRecipeCategory>> vanillaCategories = Suppliers.memoize(() -> HashBiMap.create(Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
+            return Map.entry(type, switch (type) {
                 case CRAFTING -> VanillaEmiRecipeCategories.CRAFTING;
                 case SMELTING -> VanillaEmiRecipeCategories.SMELTING;
                 case BLASTING -> VanillaEmiRecipeCategories.BLASTING;
@@ -105,7 +90,44 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> VanillaEmiRecipeCategories.FUEL;
                 case COMPOSTING -> VanillaEmiRecipeCategories.COMPOSTING;
                 case INFO -> VanillaEmiRecipeCategories.INFO;
-            }).map(category -> builtInCategories.computeIfAbsent(category, id -> new BuiltInCategory(id, type.getSize())));
+            });
+        }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length)))));
+
+        private EmiImplementation(EmiRegistry registry, PluginLoader.BootstrapContext bootstrapContext) {
+            this.registry = registry;
+            this.bootstrapContext = bootstrapContext;
+            this.bootstrapContext.registerCategoryProvider(id -> builtInCategories.values().stream().filter(category -> category.getId().equals(id)).findFirst().orElse(null));
+        }
+
+        @Override
+        public PluginContext getContext() {
+            return this;
+        }
+
+        @Override
+        public void addCategory(TlaCategory category) {
+            if (bootstrapContext.getOwnerOf(category) != null) {
+                return;
+            }
+            var emiCategory = new TlaEmiRecipeCategory(category);
+            categories.put(category, emiCategory);
+            registry.addCategory(emiCategory);
+            bootstrapContext.registerCategory(category);
+        }
+
+        @Override
+        public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
+            return Optional.ofNullable(vanillaCategories.get().get(type)).map(category -> builtInCategories.computeIfAbsent(category, id -> new WrappedEmiCategory(type, id, type.getSize())));
+        }
+
+        @Override
+        public Optional<BuiltInRecipeCategory> getVanillaCategory(TlaCategory category) {
+            if (category instanceof WrappedEmiCategory c) {
+                return Optional.ofNullable(c.type());
+            }
+
+            RecipeViewer viewer = bootstrapContext.getOwnerOf(category);
+            return viewer == getActiveViewer() ? Optional.empty() : bootstrapContext.getPluginContext(viewer).flatMap(ctx -> ctx.getVanillaCategory(category));
         }
 
         @Override
@@ -117,10 +139,21 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         private EmiRecipeCategory getEmiCategory(TlaCategory category) {
-            if (category instanceof BuiltInCategory builtIn) {
+            if (category instanceof WrappedEmiCategory builtIn) {
                 return builtIn.category();
             }
-            return Objects.requireNonNull(categories.get(category), "Category " + category + " not registered");
+
+            EmiRecipeCategory emiCategory = categories.get(category);
+            if (emiCategory != null) {
+                return emiCategory;
+            }
+
+            RecipeViewer viewer = bootstrapContext.getOwnerOf(category);
+
+            return Objects.requireNonNull(viewer == getActiveViewer() ? null : bootstrapContext.getPluginContext(viewer)
+                    .flatMap(ctx -> ctx.getVanillaCategory(category))
+                    .map(type -> vanillaCategories.get().get(type))
+                    .orElse(null), "Category " + category + " not registered");
         }
 
         @Override
@@ -128,20 +161,16 @@ public class TlaApiEmiPlugin implements EmiPlugin {
             registry.getRecipeManager().values().stream()
                 .flatMap(recipe -> recipe.value().getDisplays().stream())
                 .filter(display -> type == display.serializer())
-                .forEach(display -> {
-                    generator.apply(Untyped.cast(display)).forEach(tlaRecipe -> {
-                        var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
-                        registry.addRecipe(emiRecipe);
-                    });
-                });
+                .flatMap(display -> generator.apply(Untyped.cast(display)))
+                .map(tlaRecipe -> new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory())))
+                .forEach(registry::addRecipe);
         }
 
         @Override
         public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
-            generator.apply(bootstrapContext.getServer()).forEach(tlaRecipe -> {
-                var emiRecipe = new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory()));
-                registry.addRecipe(emiRecipe);
-            });
+            generator.apply(bootstrapContext.getServer())
+                .map(tlaRecipe -> new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory())))
+                .forEach(registry::addRecipe);
         }
 
         @Override
@@ -154,11 +183,21 @@ public class TlaApiEmiPlugin implements EmiPlugin {
             registry.removeEmiStacks(stack -> predicate.test(EmiUtils.convertStack(stack)));
         }
 
+        TlaCategory lookupCategory(EmiRecipeCategory categoryId, int[] size) {
+            if (categoryId instanceof TlaEmiRecipeCategory c) {
+                return c.category;
+            }
+
+            return Optional.ofNullable(vanillaCategories.get().inverse().get(categoryId))
+                .flatMap(this::getVanillaCategory)
+                .orElseGet(() -> builtInCategories.computeIfAbsent(categoryId, i -> new WrappedEmiCategory(null, i, size)));
+        }
+
         public TlaRecipe recipeOf(EmiRecipe recipe) {
             return switch(recipe) {
                 case TlaEmiRecipe r -> r.getUnderlying();
                 default -> new BasicTlaRecipe(
-                        recipe.getCategory() instanceof TlaEmiRecipeCategory c ? c.category : new BuiltInCategory(recipe.getCategory(), new int[] {recipe.getDisplayWidth(), recipe.getDisplayHeight() }),
+                        lookupCategory(recipe.getCategory(), new int[] {recipe.getDisplayWidth(), recipe.getDisplayHeight() }),
                         recipe.getId() == null ? null : RegistryKey.of(RegistryKeys.RECIPE, recipe.getId()),
                         () -> recipe.getInputs().stream().map(EmiUtils::convertIngredient).toList(),
                         () -> recipe.getOutputs().stream().map(EmiUtils::convertStack).toList(),
@@ -169,9 +208,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         @Override
         public void removeRecipes(Predicate<TlaRecipe> predicate) {
-            registry.removeRecipes(recipe -> {
-                return predicate.test(recipeOf(recipe));
-            });
+            registry.removeRecipes(recipe -> predicate.test(recipeOf(recipe)));
         }
 
         @Override
@@ -262,10 +299,15 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                         stack -> comparison.hashFunction().hash(EmiUtils.convertStack(stack)))
                 );
             }
+
+            @Override
+            public RecipeViewer getRecipeViewer() {
+                return RecipeViewer.EMI;
+            }
         }
     }
 
-    private record BuiltInCategory(EmiRecipeCategory category, int[] size) implements TlaCategory {
+    private record WrappedEmiCategory(BuiltInRecipeCategory type, EmiRecipeCategory category, int[] size) implements TlaCategory, RecipeViewerOwned {
         private static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
 
         @Override
@@ -291,6 +333,11 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         @Override
         public CategoryIcon getSimpleIcon() {
             return ICON;
+        }
+
+        @Override
+        public RecipeViewer getRecipeViewer() {
+            return RecipeViewer.REI;
         }
     }
 }

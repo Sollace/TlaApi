@@ -2,7 +2,7 @@ package io.github.mattidragon.tlaapi.api.plugin;
 
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 
-public interface Comparisons<T> {
+public interface Comparisons<T> extends RecipeViewerOwned {
     /**
      * Adds a default comparison method for a stack for its key.
      * @param item The key for the object to compare.

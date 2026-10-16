@@ -1,5 +1,6 @@
 package io.github.mattidragon.tlaapi.api.plugin;
 
+import java.util.Optional;
 import java.util.function.Function;
 
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +40,17 @@ public final class PluginLoader {
 
     public interface BootstrapContext {
         MinecraftServer getServer();
+
+        /**
+         * Gets the recipe viewer that created the provided object if one exists
+         */
+        @Nullable RecipeViewer getOwnerOf(@Nullable Object o);
+
+        /**
+         * Gets the plugin context of a particular viewer if it has been loaded.
+         * If the viewer is the same as the current context, will return that.
+         */
+        Optional<PluginContext> getPluginContext(@Nullable RecipeViewer viewer);
 
         void registerCategory(TlaCategory category);
 
