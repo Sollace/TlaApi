@@ -31,10 +31,16 @@ import org.slf4j.LoggerFactory;
 public class TlaApi implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA Api");
 
+    public static final String DEFAULT_NAMESPACE = "tla-api";
+
     private static final Map<RecipeViewer, Bootsrap> VIEWER_REGISTRY = new HashMap<>();
 
     private static final AtomicReference<MinecraftServer> SERVER = new AtomicReference<>(null);
     public static Supplier<World> WORLD = () -> Objects.requireNonNull(SERVER.get()).getOverworld();
+
+    public static Identifier id(String path) {
+        return Identifier.of(DEFAULT_NAMESPACE, path);
+    }
 
     public static TlaCategory getCategory(Identifier id) {
         synchronized (VIEWER_REGISTRY) {

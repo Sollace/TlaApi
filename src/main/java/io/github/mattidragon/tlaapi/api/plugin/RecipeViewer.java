@@ -10,7 +10,7 @@ public record RecipeViewer(String id) {
     public static final RecipeViewer EMI = new RecipeViewer("emi");
     public static final RecipeViewer REI = new RecipeViewer("rei");
     public static final RecipeViewer JEI = new RecipeViewer("jei");
-    public static final RecipeViewer EVI = new RecipeViewer("evi");
+    public static final RecipeViewer EIV = new RecipeViewer("eiv");
 
     public RecipeViewer {
         id = id.toUpperCase(Locale.ROOT);

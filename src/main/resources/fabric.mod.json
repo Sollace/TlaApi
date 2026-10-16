@@ -29,6 +29,9 @@
     "emi": [
       "io.github.mattidragon.tlaapi.impl.emi.TlaApiEmiPlugin"
     ],
+    "eiv": [
+      "io.github.mattidragon.tlaapi.impl.eiv.TlaApiEivPlugin"
+    ],
     "rei_client": [
       "io.github.mattidragon.tlaapi.impl.client.rei.TlaApiReiClientPlugin"
     ],

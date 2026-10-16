@@ -106,7 +106,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     @Override
     public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
         return Optional.ofNullable(switch (type) {
-            case CRAFTING -> RecipeTypes.CRAFTING;
+            case CRAFTING_SHAPELESS, CRAFTING_SHAPED -> RecipeTypes.CRAFTING;
             case SMELTING -> RecipeTypes.SMELTING;
             case BLASTING -> RecipeTypes.BLASTING;
             case SMOKING -> RecipeTypes.SMOKING;
@@ -117,6 +117,8 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
             case GRINDING -> RecipeTypes.GRINDSTONE;
             case BREWING -> RecipeTypes.BREWING;
             case BEACON_PAYMENT -> null;
+            case VILLAGER_TRADING -> null;
+            case LOOT -> null;
             case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
                 WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
                 WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;

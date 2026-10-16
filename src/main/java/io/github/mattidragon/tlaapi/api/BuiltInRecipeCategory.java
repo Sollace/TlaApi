@@ -6,48 +6,87 @@ package io.github.mattidragon.tlaapi.api;
  * Use these with {@link PluginContext#getVanillaCategory} to get reference to an instance of a category in the active plugin.
  */
 public enum BuiltInRecipeCategory {
-    CRAFTING,
-    SMELTING,
-    BLASTING,
-    SMOKING,
-    CAMPFIRE_COOKING,
-    STONECUTTING,
-    SMITHING,
-    ANVIL_REPAIRING,
-    GRINDING,
-    BREWING,
-    SMELTING_FUEL,
-    BLASTING_FUEL,
-    SMOKING_FUEL,
-    COMPOSTING,
-    INFO,
-    WORLD_INTERACTION_OTHER,
-    WORLD_INTERACTION_STRIPPING,
-    WORLD_INTERACTION_TILLING,
-    WORLD_INTERACTION_FLATTENING,
-    WORLD_INTERACTION_WAXING,
-    WORLD_INTERACTION_SCRAPING,
+    CRAFTING_SHAPELESS(false),
+    CRAFTING_SHAPED(false),
+    SMELTING(false),
+    BLASTING(false),
+    SMOKING(false),
+    CAMPFIRE_COOKING(false),
+    STONECUTTING(false),
+    SMITHING(false),
+    ANVIL_REPAIRING(false),
+    GRINDING(false),
+    BREWING(false),
+    SMELTING_FUEL(false),
+    BLASTING_FUEL(false),
+    SMOKING_FUEL(false),
+    COMPOSTING(false),
+    INFO(false),
+    WORLD_INTERACTION_OTHER(true),
+    WORLD_INTERACTION_STRIPPING(true),
+    WORLD_INTERACTION_TILLING(true),
+    WORLD_INTERACTION_FLATTENING(true),
+    WORLD_INTERACTION_WAXING(true),
+    WORLD_INTERACTION_SCRAPING(true),
     /**
-     * Only supported by REI
+     * @implNote Only supported by REI
      */
-    WORLD_INTERACTION_OXIDIZING,
+    WORLD_INTERACTION_OXIDIZING(true),
     /**
-     * Only supported by REI
+     * @implNote Only supported by REI
      */
-    WORLD_INTERACTION_DEOXIDIZING,
+    WORLD_INTERACTION_DEOXIDIZING(true),
     /**
-     * Only supported by REI
+     * @implNote Only supported by REI
      */
-    WORLD_INTERACTION_BEACON_PYRAMID,
+    WORLD_INTERACTION_BEACON_PYRAMID(true),
     /**
-     * Only supported by REI
+     * @implNote Only supported by REI
      */
-    BEACON_PAYMENT;
+    BEACON_PAYMENT(false),
+    VILLAGER_TRADING(false),
+    /**
+     * Recipe category for items dropped by entities
+     */
+    LOOT(true);
 
+    private final boolean worldInteraction;
+
+    BuiltInRecipeCategory(boolean worldInteraction) {
+        this.worldInteraction = worldInteraction;
+    }
+
+    public boolean isWorldInteraction() {
+        return worldInteraction;
+    }
+
+    public boolean isBlockGuiInteraction() {
+        return !isWorldInteraction();
+    }
+
+    public boolean isCrafting() {
+        return this == CRAFTING_SHAPED || this == CRAFTING_SHAPELESS;
+    }
+
+    public boolean isFurnaceRecipe() {
+        return this == SMOKING || this == BLASTING || this == SMELTING;
+    }
+
+    public boolean isBeaconRecipe() {
+        return this == BEACON_PAYMENT || this == WORLD_INTERACTION_BEACON_PYRAMID;
+    }
+
+    public boolean isAxeAction() {
+        return this == WORLD_INTERACTION_STRIPPING || this == WORLD_INTERACTION_SCRAPING;
+    }
+
+    public boolean isFuel() {
+        return this == SMELTING_FUEL || this == BLASTING_FUEL || this == SMOKING_FUEL;
+    }
 
     public int[] getSize() {
         return switch (this) {
-            case CRAFTING -> new int[] {118, 54};
+            case CRAFTING_SHAPELESS, CRAFTING_SHAPED -> new int[] {118, 54};
             case SMELTING, BLASTING, SMOKING, CAMPFIRE_COOKING -> new int[] {82, 38};
             case STONECUTTING -> new int[] {76, 18};
             case SMITHING -> new int[] {112, 18};
@@ -55,6 +94,8 @@ public enum BuiltInRecipeCategory {
             case GRINDING -> new int[] {116, 56};
             case BREWING -> new int[] {120, 61};
             case BEACON_PAYMENT -> new int[] {150, 140};
+            case VILLAGER_TRADING -> new int[] {140, 36};
+            case LOOT -> new int[] {162, 152};
             case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
                     WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
                     WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> new int[] {125, 18};

@@ -75,7 +75,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         private final Supplier<BiMap<BuiltInRecipeCategory, EmiRecipeCategory>> vanillaCategories = Suppliers.memoize(() -> Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
             return Map.entry(type, switch (type) {
-                case CRAFTING -> VanillaEmiRecipeCategories.CRAFTING;
+                case CRAFTING_SHAPED, CRAFTING_SHAPELESS -> VanillaEmiRecipeCategories.CRAFTING;
                 case SMELTING -> VanillaEmiRecipeCategories.SMELTING;
                 case BLASTING -> VanillaEmiRecipeCategories.BLASTING;
                 case SMOKING -> VanillaEmiRecipeCategories.SMOKING;
@@ -86,6 +86,8 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 case GRINDING -> VanillaEmiRecipeCategories.GRINDING;
                 case BREWING -> VanillaEmiRecipeCategories.BREWING;
                 case BEACON_PAYMENT -> null;
+                case VILLAGER_TRADING -> null;
+                case LOOT -> null;
                 case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
                         WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
                         WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> VanillaEmiRecipeCategories.WORLD_INTERACTION;

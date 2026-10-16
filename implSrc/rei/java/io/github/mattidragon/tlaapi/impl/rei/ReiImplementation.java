@@ -52,7 +52,7 @@ public class ReiImplementation implements PluginContext {
 
     private static final BiMap<BuiltInRecipeCategory, CategoryIdentifier<?>> VANILLA_CATEGORIES = Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
         return Map.entry(type, switch (type) {
-            case CRAFTING -> CategoryIdentifier.of("minecraft", "plugins/crafting");
+            case CRAFTING_SHAPELESS, CRAFTING_SHAPED -> CategoryIdentifier.of("minecraft", "plugins/crafting");
             case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
             case BLASTING -> CategoryIdentifier.of("minecraft", "plugins/blasting");
             case SMOKING -> CategoryIdentifier.of("minecraft", "plugins/smoking");
@@ -63,6 +63,8 @@ public class ReiImplementation implements PluginContext {
             case GRINDING -> null;//RecipeTypes.GRINDING;
             case BREWING -> CategoryIdentifier.of("minecraft", "plugins/brewing");
             case BEACON_PAYMENT -> CategoryIdentifier.of("minecraft", "plugins/beacon_payment");
+            case VILLAGER_TRADING -> null;
+            case LOOT -> null;
             case WORLD_INTERACTION_BEACON_PYRAMID -> CategoryIdentifier.of("minecraft", "plugins/beacon_base");
             case WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
             case WORLD_INTERACTION_STRIPPING -> CategoryIdentifier.of("minecraft", "plugins/stripping");
