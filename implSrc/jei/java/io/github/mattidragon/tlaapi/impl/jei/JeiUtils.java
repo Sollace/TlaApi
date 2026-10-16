@@ -20,7 +20,13 @@ import java.util.List;
 import java.util.Optional;
 
 class JeiUtils {
-    public static final Identifier VANILLA_GUI_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/gui/gui_vanilla.png");
+    public static final Identifier ARROW_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/recipe_arrow.png");
+    public static final Identifier FILLED_ARROW_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/recipe_arrow_filled.png");
+
+    public static final Identifier FLAME_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/icons/flame_empty.png");
+    public static final Identifier FILLED_FLAME_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/icons/flame.png");
+
+    public static final Identifier OUTPUT_SLOT_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/output_slot.png");
 
     public static Optional<? extends ITypedIngredient<?>> convertStack(IJeiHelpers helpers, TlaStack stack) {
         return switch (stack) {
