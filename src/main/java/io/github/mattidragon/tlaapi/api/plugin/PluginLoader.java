@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.impl.ImplementationOnly;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
@@ -39,7 +38,7 @@ public final class PluginLoader {
     }
 
     public interface BootstrapContext {
-        MinecraftServer getServer();
+        World getWorld();
 
         /**
          * Gets the recipe viewer that created the provided object if one exists
@@ -52,8 +51,22 @@ public final class PluginLoader {
          */
         Optional<PluginContext> getPluginContext(@Nullable RecipeViewer viewer);
 
+        /**
+         * Given an id, finds the corresponding TlaCategory.
+         *
+         * May return categories registered by other implementations.
+         */
+        @Nullable
+        TlaCategory lookupCategory(Identifier id);
+
+        /**
+         * Adds a category to the global registry.
+         */
         void registerCategory(TlaCategory category);
 
+        /**
+         * Adds a lookup function for categories not present in the registry (like built-in categories)
+         */
         void registerCategoryProvider(Function<Identifier, @Nullable TlaCategory> provider);
     }
 }

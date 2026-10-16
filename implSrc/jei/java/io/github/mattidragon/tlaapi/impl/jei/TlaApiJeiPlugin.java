@@ -1,5 +1,6 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
+import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.IModPlugin;
@@ -17,10 +18,10 @@ import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.common.Internal;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.Rect2i;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 
 import java.util.*;
@@ -70,15 +71,17 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        var client = MinecraftClient.getInstance();
         var jeiHelpers = registration.getJeiHelpers();
-        var server = client.getServer();
+        RecipeManager recipeManager = context.bootstrapContext.getWorld() instanceof ServerWorld sw ? RecipeManager.of(sw.getRegistryManager(), sw.getRecipeManager()) : RecipeManager.of(
+                context.bootstrapContext.getWorld().getRegistryManager(),
+                () -> Internal.getClientSyncedRecipes().recipes().stream(),
+                type -> Internal.getClientSyncedRecipes().getAll(type)
+        );
 
         Stream.concat(
-                (server == null ? Internal.getClientSyncedRecipes().recipes() : server.getRecipeManager().values())
-                    .stream()
+                recipeManager.values()
                     .flatMap(entry -> context.recipeFunctions.stream().flatMap(generator -> generator.apply(entry))),
-                    context.recipeGenerators.stream().flatMap(generator -> generator.apply(server))
+                    context.recipeGenerators.stream().flatMap(generator -> generator.apply(recipeManager))
             )
             .map(recipe -> new PreparedRecipe(jeiHelpers, recipe))
             .collect(Collectors.groupingBy(PreparedRecipe::getCategory))

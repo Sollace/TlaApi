@@ -11,6 +11,7 @@ import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
@@ -35,7 +36,6 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,7 +50,7 @@ import org.jetbrains.annotations.Nullable;
 public class ReiImplementation implements PluginContext {
     public static ReiImplementation INSTANCE;
 
-    private static final BiMap<BuiltInRecipeCategory, CategoryIdentifier<?>> VANILLA_CATEGORIES = HashBiMap.create(Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
+    private static final BiMap<BuiltInRecipeCategory, CategoryIdentifier<?>> VANILLA_CATEGORIES = Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
         return Map.entry(type, switch (type) {
             case CRAFTING -> CategoryIdentifier.of("minecraft", "plugins/crafting");
             case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
@@ -76,15 +76,14 @@ public class ReiImplementation implements PluginContext {
             case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
             case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
         });
-    }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length))));
-
+    }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length)));
 
     private final Map<CategoryIdentifier<?>, WrappedEmiCategory> builtInCategories = new HashMap<>();
     private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
     private final Map<CategoryIdentifier<?>, TlaDisplayCategory> categoryIdentifiers = new HashMap<>();
     private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     private final List<RecipeGenerator<?>> recipeGenerators = new ArrayList<>();
-    private final List<Function<MinecraftServer, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
+    private final List<Function<RecipeManager, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
     private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
     private final List<Comparator<Fluid, FluidStack>> fluidComparators = new ArrayList<>();
 
@@ -135,8 +134,6 @@ public class ReiImplementation implements PluginContext {
     }
 
     public void registerDisplays(DisplayRegistryCommon<?> registry) {
-        // This is generic soup due to javas type system limitations
-        // We need an unsafe cast so that we can use the generator function after checking the recipe type
         registry.beginFiller(RecipeDisplay.class)
                 .filter(display -> recipeGenerators.stream().anyMatch(generator -> generator.type == display.serializer()))
                 .fillMultiple(display -> recipeGenerators.stream()
@@ -147,8 +144,10 @@ public class ReiImplementation implements PluginContext {
                         .map(TlaDisplay::of)
                         .toList());
 
+        RecipeManager recipeManager = RecipeManager.of(bootstrapContext.getWorld());
+
         customGenerators.stream()
-            .flatMap(generator -> generator.apply(bootstrapContext.getServer()))
+            .flatMap(generator -> generator.apply(recipeManager))
             .map(TlaDisplay::of)
             .forEach(registry::add);
 
@@ -221,7 +220,7 @@ public class ReiImplementation implements PluginContext {
     }
 
     @Override
-    public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
+    public void addGenerator(Function<RecipeManager, Stream<TlaRecipe>> generator) {
         customGenerators.add(generator);
     }
 

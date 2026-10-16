@@ -116,9 +116,14 @@ public class TlaApi implements ModInitializer {
         }
 
         @Override
-        public MinecraftServer getServer() {
-            // TODO Auto-generated method stub
-            return null;
+        public World getWorld() {
+            return TlaApi.getWorld();
+        }
+
+        @Nullable
+        @Override
+        public TlaCategory lookupCategory(Identifier id) {
+            return getCategory(id);
         }
     }
 }

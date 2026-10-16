@@ -10,9 +10,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
-
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -74,11 +72,11 @@ public interface PluginContext {
 
     /**
      * Adds a recipe generator that can create recipe entries in the recipe viewer from any source.
-     * The generator is provided the server instance for convenience.
+     * The generator is provided the world reference for convenience.
      * @see TlaRecipe
      * @see #addRecipeGenerator
      */
-    void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator);
+    void addGenerator(Function<RecipeManager, Stream<TlaRecipe>> generator);
 
     /**
      * Adds a predicate to run on all current and future TlaStacks to prevent certain ones from being added to the sidebar.

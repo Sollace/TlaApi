@@ -10,6 +10,7 @@ import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
@@ -30,9 +31,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
-
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -43,7 +42,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     final Map<Identifier, BuiltInTlaCategory> builtInCategories = new HashMap<>();
     final List<TlaCategory> categories = new ArrayList<>();
     final List<Function<RecipeEntry<?>, Stream<TlaRecipe>>> recipeFunctions = new ArrayList<>();
-    final List<Function<MinecraftServer, Stream<TlaRecipe>>> recipeGenerators = new ArrayList<>();
+    final List<Function<RecipeManager, Stream<TlaRecipe>>> recipeGenerators = new ArrayList<>();
     final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     final List<ClickAreaTuple<?>> clickAreas = new ArrayList<>();
     final List<GhostHandler<?>> ghostHandlers = new ArrayList<>();
@@ -80,7 +79,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         }
     };
 
-    private PluginLoader.BootstrapContext bootstrapContext;
+    PluginLoader.BootstrapContext bootstrapContext;
 
     TlaApiJeiPluginContext() {
         ClientPluginLoader.loadPlugins(PluginLoader.loadPlugins(RecipeViewer.JEI, bootstrapContext -> {
@@ -152,7 +151,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     }
 
     @Override
-    public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
+    public void addGenerator(Function<RecipeManager, Stream<TlaRecipe>> generator) {
         recipeGenerators.add(generator);
     }
 

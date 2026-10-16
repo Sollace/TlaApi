@@ -17,6 +17,7 @@ import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.recipe.BasicTlaRecipe;
@@ -37,7 +38,6 @@ import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 
 import java.util.Arrays;
@@ -69,9 +69,11 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         private final Comparisons<ItemConvertible> itemComparisons = new EmiComparisons<>();
         private final Comparisons<Fluid> fluidComparisons = new EmiComparisons<>();
 
+        private final RecipeManager recipeManager;
+
         private PluginLoader.BootstrapContext bootstrapContext;
 
-        private final Supplier<BiMap<BuiltInRecipeCategory, EmiRecipeCategory>> vanillaCategories = Suppliers.memoize(() -> HashBiMap.create(Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
+        private final Supplier<BiMap<BuiltInRecipeCategory, EmiRecipeCategory>> vanillaCategories = Suppliers.memoize(() -> Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
             return Map.entry(type, switch (type) {
                 case CRAFTING -> VanillaEmiRecipeCategories.CRAFTING;
                 case SMELTING -> VanillaEmiRecipeCategories.SMELTING;
@@ -91,12 +93,13 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 case COMPOSTING -> VanillaEmiRecipeCategories.COMPOSTING;
                 case INFO -> VanillaEmiRecipeCategories.INFO;
             });
-        }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length)))));
+        }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length))));
 
         private EmiImplementation(EmiRegistry registry, PluginLoader.BootstrapContext bootstrapContext) {
             this.registry = registry;
             this.bootstrapContext = bootstrapContext;
             this.bootstrapContext.registerCategoryProvider(id -> builtInCategories.values().stream().filter(category -> category.getId().equals(id)).findFirst().orElse(null));
+            this.recipeManager = RecipeManager.of(bootstrapContext.getWorld().getRegistryManager(), registry.getRecipeManager());
         }
 
         @Override
@@ -167,8 +170,8 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public void addGenerator(Function<MinecraftServer, Stream<TlaRecipe>> generator) {
-            generator.apply(bootstrapContext.getServer())
+        public void addGenerator(Function<RecipeManager, Stream<TlaRecipe>> generator) {
+            generator.apply(recipeManager)
                 .map(tlaRecipe -> new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory())))
                 .forEach(registry::addRecipe);
         }
