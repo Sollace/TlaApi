@@ -34,7 +34,7 @@ import io.github.mattidragon.tlaapi.impl.MoreCodecs;
  * Represents a stack of items or fluids for use with recipe viewers.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack {
+public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack, TlaStack.TlaEmptyStack {
     private static final Codec<Either<FluidVariant, ItemVariant>> VARIANT_CODEC = Codec.either(FluidVariant.CODEC, ItemVariant.CODEC);
     private static final PacketCodec<RegistryByteBuf, Either<FluidVariant, ItemVariant>> VARIANT_PACKET_CODEC = PacketCodecs.either(FluidVariant.PACKET_CODEC, ItemVariant.PACKET_CODEC);
 
@@ -52,13 +52,14 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
 
     protected final long amount;
     protected final OptionalDouble chance;
+    protected final Either<FluidVariant, ItemVariant> variant;
 
     static final DisplayedItemFactory.FromStack<TlaStack> DISPLAYED_ITEM_FACTORY = TlaStack::of;
-    private static final TlaStack EMPTY = new TlaItemStack(ItemVariant.blank(), 0, OptionalDouble.empty());
 
-    protected TlaStack(long amount, OptionalDouble chance) {
+    protected TlaStack(long amount, OptionalDouble chance, Either<FluidVariant, ItemVariant> variant) {
         this.amount = amount;
         this.chance = chance;
+        this.variant = variant;
     }
 
     private static TlaStack of(Either<FluidVariant, ItemVariant> variant, long amount, OptionalDouble chance) {
@@ -69,7 +70,7 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
      * Creates a stack of 0 air items.
      */
     public static TlaStack empty() {
-        return EMPTY;
+        return TlaEmptyStack.INSTANCE;
     }
 
     public static TlaStack of(FluidVariant fluid, long amount) {
@@ -149,53 +150,72 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
      */
     public abstract TlaStack withoutChance();
 
-    public abstract Either<FluidVariant, ItemVariant> getVariant();
+    public Either<FluidVariant, ItemVariant> getVariant() {
+        return variant;
+    }
 
     public TlaIngredient asIngredient() {
         return TlaIngredient.ofStacks(this);
     }
 
-    public abstract ComponentChanges getComponents();
+    public ComponentChanges getComponents() {
+        return Either.unwrap(variant).getComponents();
+    }
 
-    public static final class TlaFluidStack extends TlaStack {
-        private final FluidVariant fluid;
+    public static final class TlaEmptyStack extends TlaStack {
+        static final TlaEmptyStack INSTANCE = new TlaEmptyStack();
 
-        private TlaFluidStack(FluidVariant fluid, long amount, OptionalDouble chance) {
-            super(amount, chance);
-            this.fluid = fluid;
+        private TlaEmptyStack() {
+            super(0, OptionalDouble.empty(), Either.right(ItemVariant.blank()));
         }
 
         @Override
-        public TlaFluidStack withAmount(long amount) {
-            return new TlaFluidStack(fluid, amount, chance);
+        public TlaStack withAmount(long amount) {
+            return this;
         }
 
         @Override
-        public TlaFluidStack withChance(double chance) {
-            return new TlaFluidStack(fluid, amount, OptionalDouble.of(chance));
+        public TlaStack withChance(double chance) {
+            return this;
         }
 
         @Override
-        public TlaFluidStack withoutChance() {
-            return new TlaFluidStack(fluid, amount, OptionalDouble.empty());
-        }
-
-        public FluidVariant getFluidVariant() {
-            return fluid;
-        }
-
-        public Fluid getFluid() {
-            return fluid.getFluid();
-        }
-
-        @Override
-        public Either<FluidVariant, ItemVariant> getVariant() {
-            return Either.left(fluid);
+        public TlaStack withoutChance() {
+            return this;
         }
 
         @Override
         public ComponentChanges getComponents() {
-            return fluid.getComponents();
+            return ComponentChanges.EMPTY;
+        }
+    }
+
+    public static final class TlaFluidStack extends TlaStack {
+        private TlaFluidStack(FluidVariant fluid, long amount, OptionalDouble chance) {
+            super(amount, chance, Either.left(fluid));
+        }
+
+        @Override
+        public TlaFluidStack withAmount(long amount) {
+            return new TlaFluidStack(getVariant().left().get(), amount, chance);
+        }
+
+        @Override
+        public TlaFluidStack withChance(double chance) {
+            return chance >= 1 ? withoutChance() : new TlaFluidStack(getFluidVariant(), amount, OptionalDouble.of(chance));
+        }
+
+        @Override
+        public TlaFluidStack withoutChance() {
+            return chance.isEmpty() ? this : new TlaFluidStack(getFluidVariant(), amount, OptionalDouble.empty());
+        }
+
+        public FluidVariant getFluidVariant() {
+            return getVariant().left().get();
+        }
+
+        public Fluid getFluid() {
+            return getVariant().left().get().getFluid();
         }
 
         @Override
@@ -203,68 +223,56 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
             var that = (TlaFluidStack) obj;
-            return Objects.equals(this.fluid, that.fluid) &&
+            return Objects.equals(this.variant, that.variant) &&
                    this.amount == that.amount &&
                    Objects.equals(this.chance, that.chance);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(fluid, amount, chance);
+            return Objects.hash(variant, amount, chance);
         }
 
         @Override
         public String toString() {
             return "TlaFluidStack[" +
-                   "fluid=" + fluid + ", " +
+                   "fluid=" + getFluidVariant() + ", " +
                    "amount=" + amount + ", " +
                    "chance=" + chance + ']';
         }
     }
 
     public static final class TlaItemStack extends TlaStack {
-        private final ItemVariant item;
 
         private TlaItemStack(ItemVariant item, long amount, OptionalDouble chance) {
-            super(amount, chance);
-            this.item = item;
+            super(amount, chance, Either.right(item));
         }
 
         @Override
         public TlaItemStack withAmount(long amount) {
-            return new TlaItemStack(item, amount, chance);
+            return new TlaItemStack(getItemVariant(), amount, chance);
         }
 
         @Override
         public TlaItemStack withChance(double chance) {
-            return new TlaItemStack(item, amount, OptionalDouble.of(chance));
+            return chance >= 1 ? withoutChance() : new TlaItemStack(getItemVariant(), amount, OptionalDouble.of(chance));
         }
 
         @Override
         public TlaItemStack withoutChance() {
-            return new TlaItemStack(item, amount, OptionalDouble.empty());
+            return chance.isEmpty() ? this : new TlaItemStack(getItemVariant(), amount, OptionalDouble.empty());
         }
 
         public Item getItem() {
-            return item.getItem();
+            return getItemVariant().getItem();
         }
 
         public ItemVariant getItemVariant() {
-            return item;
+            return getVariant().right().get();
         }
 
         public ItemStack toStack() {
-            return item.toStack((int) amount);
-        }
-
-        @Override
-        public ComponentChanges getComponents() {
-            return item.getComponents();
-        }
-
-        @Override
-        public Either<FluidVariant, ItemVariant> getVariant() {
-            return Either.right(item);
+            return getItemVariant().toStack((int) amount);
         }
 
         @Override
@@ -272,20 +280,20 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
             var that = (TlaItemStack) obj;
-            return Objects.equals(this.item, that.item) &&
+            return Objects.equals(this.variant, that.variant) &&
                    this.amount == that.amount &&
                    Objects.equals(this.chance, that.chance);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(item, amount, chance);
+            return Objects.hash(variant, amount, chance);
         }
 
         @Override
         public String toString() {
             return "TlaItemStack[" +
-                   "item=" + item + ", " +
+                   "item=" + getItemVariant() + ", " +
                    "amount=" + amount + ", " +
                    "chance=" + chance + ']';
         }

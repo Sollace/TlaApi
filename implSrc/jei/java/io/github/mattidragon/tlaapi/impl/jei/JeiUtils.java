@@ -23,10 +23,10 @@ class JeiUtils {
     public static final Identifier VANILLA_GUI_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/gui/gui_vanilla.png");
 
     public static Optional<? extends ITypedIngredient<?>> convertStack(IJeiHelpers helpers, TlaStack stack) {
-        var manager = helpers.getIngredientManager();
         return switch (stack) {
-            case TlaStack.TlaFluidStack fluidStack -> createFluidIngredient(manager, helpers.getPlatformFluidHelper(), fluidStack);
-            case TlaStack.TlaItemStack itemStack -> manager.createTypedIngredient(VanillaTypes.ITEM_STACK, itemStack.toStack(), false);
+            case TlaStack.TlaEmptyStack empty -> Optional.empty();
+            case TlaStack.TlaFluidStack fluidStack -> createFluidIngredient(helpers.getIngredientManager(), helpers.getPlatformFluidHelper(), fluidStack);
+            case TlaStack.TlaItemStack itemStack -> helpers.getIngredientManager().createTypedIngredient(VanillaTypes.ITEM_STACK, itemStack.toStack(), false);
         };
     }
 

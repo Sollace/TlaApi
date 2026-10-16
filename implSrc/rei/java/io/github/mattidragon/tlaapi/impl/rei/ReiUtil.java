@@ -21,6 +21,7 @@ public class ReiUtil {
 
     public static EntryStack<?> convertStack(TlaStack stack) {
         return switch (stack) {
+            case TlaStack.TlaEmptyStack empty -> EntryStack.empty();
             case TlaStack.TlaFluidStack fluidStack -> EntryStacks.of(FluidStack.create(
                     fluidStack.getFluid(),
                     fluidStack.getAmount(),

@@ -18,19 +18,11 @@ class EmiUtils {
     private static final EmiRenderable EMPTY_RENDERABLE = (draw, x, y, delta) -> {};
 
     public static EmiStack convertStack(TlaStack stack) {
-        if (stack.isEmpty()) {
-            return EmiStack.EMPTY;
-        }
-        EmiStack emiStack;
-        if (stack instanceof TlaStack.TlaFluidStack fluidStack) {
-            emiStack = EmiStack.of(fluidStack.getFluid(), fluidStack.getFluidVariant().getComponents(), fluidStack.getAmount());
-        } else if (stack instanceof TlaStack.TlaItemStack itemStack) {
-            emiStack = EmiStack.of(itemStack.toStack(), itemStack.getAmount());
-        } else {
-            throw new IllegalArgumentException("Unknown stack type: " + stack.getClass().getName());
-        }
-        stack.getChance().ifPresent(chance -> emiStack.setChance((float) chance));
-        return emiStack;
+        return (switch(stack) {
+            case TlaStack.TlaEmptyStack empty -> EmiStack.EMPTY;
+            case TlaStack.TlaFluidStack fluidStack -> EmiStack.of(fluidStack.getFluid(), fluidStack.getFluidVariant().getComponents(), fluidStack.getAmount());
+            case TlaStack.TlaItemStack itemStack -> EmiStack.of(itemStack.toStack(), itemStack.getAmount());
+        }).setChance((float)stack.getChance().orElse(1D));
     }
 
     public static EmiIngredient convertIngredient(TlaIngredient ingredient) {
@@ -48,24 +40,18 @@ class EmiUtils {
     }
 
     public static TlaStack convertStack(EmiStack stack) {
-        if (stack.getKey() instanceof Fluid fluid) {
-            var out = TlaStack.of(FluidVariant.of(fluid, stack.getComponentChanges()), stack.getAmount());
-            if (stack.getChance() != 1) out = out.withChance(stack.getChance());
-            return out;
-        } else if (stack.getKey() instanceof Item item) {
-            var out = TlaStack.of(ItemVariant.of(item, stack.getComponentChanges()), stack.getAmount()).withChance(stack.getChance());
-            if (stack.getChance() != 1) out = out.withChance(stack.getChance());
-            return out;
-        }
-        return TlaStack.empty();
+        return (switch(stack.getKey()) {
+            case Fluid fluid -> TlaStack.of(FluidVariant.of(fluid, stack.getComponentChanges()), stack.getAmount());
+            case Item item -> TlaStack.of(ItemVariant.of(item, stack.getComponentChanges()), stack.getAmount()).withChance(stack.getChance());
+            default -> TlaStack.empty();
+        }).withChance(stack.getChance());
     }
 
     public static TlaIngredient convertIngredient(EmiIngredient stack) {
         if (stack instanceof EmiStack emiStack) {
             return TlaIngredient.ofStacks(convertStack(emiStack));
-        } else {
-            return TlaIngredient.ofStacks(stack.getEmiStacks().stream().map(EmiUtils::convertStack).toList());
         }
+        return TlaIngredient.ofStacks(stack.getEmiStacks().stream().map(EmiUtils::convertStack).toList());
     }
 
     public static EmiRenderable iconToRenderable(CategoryIcon icon) {
