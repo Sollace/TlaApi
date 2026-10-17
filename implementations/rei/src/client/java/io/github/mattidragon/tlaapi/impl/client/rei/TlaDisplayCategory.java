@@ -2,7 +2,7 @@ package io.github.mattidragon.tlaapi.impl.client.rei;
 
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.impl.client.TlaApiClient;
-import io.github.mattidragon.tlaapi.impl.rei.ReiUtil;
+import io.github.mattidragon.tlaapi.impl.client.rei.util.TlaWidgets;
 import io.github.mattidragon.tlaapi.impl.rei.TlaDisplay;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.gui.Renderer;
@@ -17,8 +17,8 @@ public class TlaDisplayCategory implements DisplayCategory<TlaDisplay> {
     private final CategoryIdentifier<TlaDisplay> id;
     private final TlaCategory category;
 
-    public TlaDisplayCategory(TlaCategory category) {
-        this.id = CategoryIdentifier.of(category.getId());
+    public TlaDisplayCategory(TlaCategory category, CategoryIdentifier<TlaDisplay> id) {
+        this.id = id;
         this.category = category;
     }
 
@@ -38,7 +38,7 @@ public class TlaDisplayCategory implements DisplayCategory<TlaDisplay> {
 
     @Override
     public Renderer getIcon() {
-        return ReiUtil.iconToRenderer(category.getIcon());
+        return TlaWidgets.iconToRenderer(category.getIcon());
     }
 
     @Override

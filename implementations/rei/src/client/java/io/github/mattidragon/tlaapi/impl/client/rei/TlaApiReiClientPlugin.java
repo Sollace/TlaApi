@@ -33,7 +33,13 @@ public class TlaApiReiClientPlugin implements REIClientPlugin {
 
     @Override
     public void registerCategories(CategoryRegistry registry) {
-        ReiImplementation.INSTANCE.registerCategories(registry);
+        ReiImplementation.INSTANCE.categories.forEach((category, id) -> {
+            registry.add(new TlaDisplayCategory(category, id));
+        });
+        ReiImplementation.INSTANCE.workstations.forEach((category, workstation) -> registry.addWorkstations(ReiImplementation.INSTANCE.getCategoryIdentifier(category), ReiUtil.convertIngredient(workstation)));
+        ReiImplementation.INSTANCE.builtInCategories.forEach((id, category) -> {
+            category.category().set(registry.get(id).getCategory());
+        });
     }
 
     @Override

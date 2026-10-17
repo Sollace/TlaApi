@@ -1,4 +1,4 @@
-package io.github.mattidragon.tlaapi.impl.rei.util;
+package io.github.mattidragon.tlaapi.impl.client.rei.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 

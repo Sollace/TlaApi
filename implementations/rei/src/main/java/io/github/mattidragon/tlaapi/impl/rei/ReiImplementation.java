@@ -21,8 +21,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.Untyped;
-import io.github.mattidragon.tlaapi.impl.client.rei.TlaDisplayCategory;
-import me.shedaniel.rei.api.client.registry.category.CategoryRegistry;
+
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.entry.comparison.EntryComparator;
 import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
@@ -80,10 +79,9 @@ public class ReiImplementation implements PluginContext {
         });
     }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length)));
 
-    private final Map<CategoryIdentifier<?>, WrappedEmiCategory> builtInCategories = new HashMap<>();
-    private final Map<TlaCategory, TlaDisplayCategory> categories = new HashMap<>();
-    private final Map<CategoryIdentifier<?>, TlaDisplayCategory> categoryIdentifiers = new HashMap<>();
-    private final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
+    public final Map<CategoryIdentifier<?>, WrappedEmiCategory> builtInCategories = new HashMap<>();
+    public final BiMap<TlaCategory, CategoryIdentifier<TlaDisplay>> categories = HashBiMap.create();
+    public final Multimap<TlaCategory, TlaIngredient> workstations = HashMultimap.create();
     private final List<RecipeGenerator<?>> recipeGenerators = new ArrayList<>();
     private final List<Function<RecipeManager, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
     private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
@@ -127,14 +125,6 @@ public class ReiImplementation implements PluginContext {
         INSTANCE = this;
     }
 
-    public void registerCategories(CategoryRegistry registry) {
-        registry.add(List.copyOf(categories.values()));
-        workstations.forEach((category, workstation) -> registry.addWorkstations(getCategoryIdentifier(category), ReiUtil.convertIngredient(workstation)));
-        builtInCategories.forEach((id, category) -> {
-            category.category().set(registry.get(id).getCategory());
-        });
-    }
-
     public void registerDisplays(DisplayRegistryCommon<?> registry) {
         registry.beginFiller(RecipeDisplay.class)
                 .filter(display -> recipeGenerators.stream().anyMatch(generator -> generator.type == display.serializer()))
@@ -159,9 +149,9 @@ public class ReiImplementation implements PluginContext {
     }
 
     TlaCategory lookupCategory(CategoryIdentifier<?> categoryId) {
-        TlaDisplayCategory tla = categoryIdentifiers.get(categoryId);
+        TlaCategory tla = categories.inverse().get(categoryId);
         if (tla != null) {
-            return tla.getCategory();
+            return tla;
         }
 
         return Optional.ofNullable(VANILLA_CATEGORIES.inverse().get(categoryId))
@@ -182,9 +172,8 @@ public class ReiImplementation implements PluginContext {
         if (bootstrapContext.getOwnerOf(category) != null) {
             return;
         }
-        var displayCategory = new TlaDisplayCategory(category);
-        categories.put(category, displayCategory);
-        categoryIdentifiers.put(displayCategory.getCategoryIdentifier(), displayCategory);
+
+        categories.put(category, CategoryIdentifier.of(category.getId()));
         bootstrapContext.registerCategory(category);
     }
 
@@ -208,7 +197,7 @@ public class ReiImplementation implements PluginContext {
         if (category instanceof WrappedEmiCategory builtIn) {
             return builtIn.id();
         }
-        return Objects.requireNonNull(categories.get(category), "Category " + category + " not registered").getCategoryIdentifier();
+        return Objects.requireNonNull(categories.get(category), "Category " + category + " not registered");
     }
 
     @Override
@@ -258,7 +247,7 @@ public class ReiImplementation implements PluginContext {
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
     private record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
-    private record WrappedEmiCategory(
+    public record WrappedEmiCategory(
             @Nullable BuiltInRecipeCategory type,
             CategoryIdentifier<?> id,
             int[] fallbackSize,

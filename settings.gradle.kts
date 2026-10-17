@@ -41,7 +41,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "TlaApi"
 includeBuild("build-src")
-include("core")
+include(":core", ":all")
 include(
  "implementations:emi",
  "implementations:rei",

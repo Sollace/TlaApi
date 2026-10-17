@@ -1,4 +1,4 @@
-package io.github.mattidragon.tlaapi.impl.rei.util;
+package io.github.mattidragon.tlaapi.impl.client.rei.util;
 
 import me.shedaniel.clothconfig2.api.animator.NumberAnimator;
 import me.shedaniel.clothconfig2.api.animator.ValueAnimator;

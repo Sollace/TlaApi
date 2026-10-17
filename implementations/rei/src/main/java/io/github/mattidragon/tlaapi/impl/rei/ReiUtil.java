@@ -1,11 +1,8 @@
 package io.github.mattidragon.tlaapi.impl.rei;
 
 import dev.architectury.fluid.FluidStack;
-import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
-import io.github.mattidragon.tlaapi.impl.rei.util.TextureWidget;
-import me.shedaniel.rei.api.client.gui.Renderer;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.entry.EntryStack;
 import me.shedaniel.rei.api.common.util.EntryStacks;
@@ -16,8 +13,6 @@ import org.slf4j.LoggerFactory;
 
 public class ReiUtil {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA-Api/REI");
-
-    private static final Renderer EMPTY_RENDERER = (graphics, bounds, mouseX, mouseY, delta) -> {};
 
     public static EntryStack<?> convertStack(TlaStack stack) {
         return switch (stack) {
@@ -57,14 +52,6 @@ public class ReiUtil {
             case 0 -> TlaIngredient.EMPTY;
             case 1 -> TlaIngredient.ofStacks(convertStack(ingredient.getFirst()));
             default -> TlaIngredient.ofStacks(ingredient.stream().map(ReiUtil::convertStack).toList());
-        };
-    }
-
-    public static Renderer iconToRenderer(CategoryIcon icon) {
-        return switch (icon) {
-            case CategoryIcon.StackIcon stackIcon -> convertStack(stackIcon.stack());
-            case CategoryIcon.TextureIcon textureIcon -> new TextureWidget(0, 0, textureIcon.texture());
-            case CategoryIcon.EmptyIcon empty -> EMPTY_RENDERER;
         };
     }
 }
