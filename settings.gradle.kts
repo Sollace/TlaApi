@@ -6,6 +6,8 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    includeBuild("build-src")
 }
 
 fun getProp(name: String): String {
@@ -36,3 +38,13 @@ dependencyResolutionManagement {
         library("eiv-api-fabric", "local.dir:eiv-api:${getProp("eiv_version")}")
     }
 }
+
+rootProject.name = "TlaApi"
+includeBuild("build-src")
+include("core")
+include(
+ "implementations:emi",
+ "implementations:rei",
+ "implementations:jei",
+ "implementations:eiv"
+)
