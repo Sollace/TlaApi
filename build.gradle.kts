@@ -51,14 +51,12 @@ subprojects {
     }
     
     repositories {
-        flatDir({ dirs("lib") })
+        flatDir({ dirs(File(rootDir, "lib")) })
         maven("https://maven.shedaniel.me/")
         maven("https://maven.terraformersmc.com/")
         maven("https://maven.blamejared.com/")
         maven("https://api.modrinth.com/maven")
     }
-
-    
 
     dependencies {
         fun Provider<MinimalExternalModuleDependency>.withClassifier(classifier: String) = variantOf(this) { this.classifier(classifier) }
