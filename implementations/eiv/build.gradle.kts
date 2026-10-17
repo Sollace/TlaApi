@@ -1,11 +1,11 @@
 plugins {
-    `mapped-dependency-helper`
+    id("mapped-dependency")
 }
 
 dependencies {
-    implementation(project(":core"))
+    implementation(project(path = ":core", configuration = "namedElements"))
 
-    mapped.dependency("https://api.modrinth.com/maven", rootProject.libs.eiv.fabric) { path -> path.contains("/api/") }
+    mapped("https://api.modrinth.com/maven", rootProject.libs.eiv.fabric) { path -> path.contains("/api/") }
     modCompileOnly(rootProject.libs.eiv.api.fabric)
     modRuntimeOnly(rootProject.libs.eiv.fabric)
 }

@@ -3,8 +3,8 @@ loom {
 }
 
 dependencies {
-    implementation(path: project(":core"), configuration: "namedElements")
-    implementation project(":core").sourceSets.client.output
+    implementation(project(path = ":core", configuration = "namedElements"))
+    implementation(coreProject.sourceSets.client.output)
 
     modCompileOnly(rootProject.libs.rei.api)
     modCompileOnly(rootProject.libs.rei.plugin.default)

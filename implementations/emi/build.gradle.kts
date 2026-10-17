@@ -1,9 +1,9 @@
 
 dependencies {
-    implementation(path: project(":core"), configuration: "namedElements")
-    implementation project(":core").sourceSets.client.output
+    implementation(project(path = ":core", configuration = "namedElements"))
+    implementation(coreProject.sourceSets.client.output)
 
-    modCompileOnly(rootProject.libs.emi.withClassifier("api"))
+    modCompileOnly(variantOf(rootProject.libs.emi) { classifier("api") })
     modRuntimeOnly(rootProject.libs.emi)
 }
 
