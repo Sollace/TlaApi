@@ -42,6 +42,18 @@ sourceSets {
     }
 }
 
+project.loom {
+    runs {
+        create("test_client") {
+            inherit(runs["client"])
+            configName = "Test Minecraft Client"
+            source(sourceSets["test"])
+        }
+    }
+    runs["client"].ideConfigGenerated(true)
+    runs["test_client"].ideConfigGenerated(true)
+}
+
 project.tasks.jar {
     dependsOn(fabricModJson)
     from(fabricModJson.flatMap{ it.outputFile })
