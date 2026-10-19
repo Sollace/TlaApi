@@ -27,7 +27,7 @@ abstract class Mapped {
                       break;
                   }
                   if (entry.getName().contains("fabric.mod.json")) {
-                    val jsonBytes = ("{ \"id\": \"${downloadArtefact[1]}-api\", \"version\": \"${downloadArtefact[2]}\", \"schemaVersion\": 1 }").toByteArray()
+                    val jsonBytes = ("{ \"id\": \"${downloadArtefact[1].split("-")[0]}-api\", \"version\": \"${downloadArtefact[2]}\", \"schemaVersion\": 1 }").toByteArray()
                     val newEntry = ZipEntry(entry.getName())
                     val crc = CRC32()
                     crc.update(jsonBytes, 0, jsonBytes.size);
