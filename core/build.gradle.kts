@@ -2,6 +2,9 @@ plugins {
     id("fabric-loom") version "1.10-SNAPSHOT"
 }
 
+version = rootProject.version
+group = rootProject.group
+
 val minecraftVersion = rootProject.property("minecraft_version") as String
 val yarnMappings = rootProject.property("yarn_mappings") as String
 val loaderVersion = rootProject.property("loader_version") as String
@@ -53,7 +56,9 @@ loom {
     createRemapConfigurations(sourceSets.test)
 
     mods {
-        create("test").sourceSet(sourceSets.test)
+        create("test") {
+            sourceSet(sourceSets.test)
+        }
         create("tla-api") {
             sourceSet(sourceSets.main)
             sourceSet(sourceSets.client)
@@ -68,6 +73,10 @@ dependencies {
     mappings(rootProject.libs.fabric.yarn.withClassifier("v2"))
     modImplementation(rootProject.libs.fabric.loader)
     modImplementation(rootProject.libs.fabric.api)
+}
+
+configurations.all {
+    resolutionStrategy.force(rootProject.libs.fabric.loader)
 }
 
 tasks.processResources  {

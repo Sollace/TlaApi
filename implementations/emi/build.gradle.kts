@@ -1,18 +1,6 @@
 plugins {
-    id("fabric-loom") version "1.10-SNAPSHOT"
+    id("tla-support-module")
     id("mapped-dependency")
-}
-
-val minecraftVersion = rootProject.property("minecraft_version") as String
-val yarnMappings = rootProject.property("yarn_mappings") as String
-val loaderVersion = rootProject.property("loader_version") as String
-val fabricVersion = rootProject.property("fabric_version") as String
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-    withSourcesJar()
 }
 
 /*repositories {
@@ -20,28 +8,15 @@ java {
     maven("https://maven.terraformersmc.com/")
 }*/
 
+tla {
+    modid = "emi"
+    displayname = "EMI"
+    entrypoints.putAll(mapOf("emi" to "io.github.mattidragon.tlaapi.impl.emi.TlaApiEmiPlugin"))
+}
+
 dependencies {
     fun Provider<MinimalExternalModuleDependency>.withClassifier(classifier: String) = variantOf(this) { this.classifier(classifier) }
 
-    minecraft(rootProject.libs.minecraft)
-    mappings(rootProject.libs.fabric.yarn.withClassifier("v2"))
-    modImplementation(rootProject.libs.fabric.loader)
-    modImplementation(rootProject.libs.fabric.api)
-
-    modImplementation(project(":core", "namedElements"))
-
-    modCompileOnly(variantOf(rootProject.libs.emi) { classifier("api") })
+    modCompileOnly(rootProject.libs.emi.withClassifier("api"))
     modRuntimeOnly(rootProject.libs.emi)
-}
-
-tasks.processResources  {
-    inputs.property("version", project.version)
-    filesMatching("fabric.mod.json") {
-        expand(
-          "version" to project.version,
-          "loader_version" to loaderVersion,
-          "fabric_version" to fabricVersion,
-          "minecraft_version" to minecraftVersion
-        )
-    }
 }

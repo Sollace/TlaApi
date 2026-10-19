@@ -3,7 +3,7 @@ import org.gradle.kotlin.dsl.support.uppercaseFirstChar
 plugins {
     id("maven-publish")
     id("fabric-loom") version "1.10-SNAPSHOT"
-    id("org.ajoberstar.reckon") version "0.13.1"
+    //id("org.ajoberstar.reckon") version "0.13.1"
 }
 
 val minecraftVersion = property("minecraft_version") as String
@@ -16,11 +16,6 @@ version = "${property("mod_version")}+${minecraftVersion}"
 group = "io.github.mattidragon"
 
 subprojects {
-    version = rootProject.version
-    group = rootProject.group
-    
-    apply(plugin = "java")
-
     repositories {
         flatDir({ dirs(File(rootDir, "lib")) })
 
@@ -29,23 +24,7 @@ subprojects {
         maven("https://maven.terraformersmc.com/")
         maven("https://maven.blamejared.com/")
     }
-
-    configurations.all {
-        resolutionStrategy.force(rootProject.libs.fabric.loader)
-    }
-
-    sourceSets {
-        test {
-            java {
-                setSrcDirs(listOf("${rootDir}/core/src/test/java"))
-            }
-            resources {
-                setSrcDirs(listOf("${rootDir}/core/src/test/resources"))
-            }
-        }
-    }
 }
-
 
 val SourceSetContainer.client: SourceSet
     get() = this["client"]
@@ -97,11 +76,11 @@ dependencies {
     modImplementation(rootProject.libs.fabric.loader)
     modImplementation(rootProject.libs.fabric.api)
 
-    implementation(project(path = ":core", configuration = "namedElements"))
-
     enabledRecipeModModules.forEach { impl ->
-        implementation(project(path = ":implementations:${impl}", configuration = "namedElements"))
-        include(project(":implementations:${impl}"))
+        if (impl.length > 0) {
+            implementation(project(path = ":implementations:${impl}", configuration = "namedElements"))
+            include(project(":implementations:${impl}"))
+        }
     }
 }
 
@@ -127,8 +106,8 @@ tasks.jar {
 
 val apiJar = tasks.register<Jar>("apiJar") {
     archiveClassifier = "api"
-    dependsOn(tasks.remapJar)
-    from(tasks.remapJar)
+    dependsOn(tasks.jar)
+    from(zipTree(tasks.jar.flatMap{ it.archiveFile }))
     include("io/github/mattidragon/tlaapi/api/**")
 }
 

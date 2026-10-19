@@ -2,6 +2,7 @@ package io.github.mattidragon.tlaapi.impl.jei;
 
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.ICodecHelper;
@@ -17,8 +18,6 @@ import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
 import com.mojang.serialization.Codec;
-
-import java.util.List;
 
 class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     private final TlaCategory category;
@@ -61,8 +60,8 @@ class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     }
 
     @Override
-    public List<Text> getTooltipStrings(PreparedRecipe recipe, IRecipeSlotsView recipeSlotsView, double mouseX, double mouseY) {
-        return recipe.getTooltips((int) mouseX, (int) mouseY);
+    public void getTooltip(ITooltipBuilder tooltip, PreparedRecipe recipe, IRecipeSlotsView recipeSlotsView, double mouseX, double mouseY) {
+        tooltip.addAll(recipe.getTooltips((int) mouseX, (int) mouseY));
     }
 
     @Override
