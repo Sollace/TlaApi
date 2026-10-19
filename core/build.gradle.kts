@@ -7,6 +7,13 @@ val yarnMappings = rootProject.property("yarn_mappings") as String
 val loaderVersion = rootProject.property("loader_version") as String
 val fabricVersion = rootProject.property("fabric_version") as String
 
+val SourceSetContainer.client: SourceSet
+    get() = this["client"]
+val SourceSetContainer.main: SourceSet
+    get() = this["main"]
+val SourceSetContainer.test: SourceSet
+    get() = this["test"]
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -16,6 +23,42 @@ java {
 
 loom {
     splitEnvironmentSourceSets()
+}
+
+sourceSets {
+    main {
+        java {
+            setSrcDirs(listOf("../core/src/main/java"))
+        }
+        resources {
+            setSrcDirs(listOf("../core/src/main/resources"))
+        }
+    }
+
+    named("client") {
+        java {
+            setSrcDirs(listOf("../core/src/client/java"))
+        }
+    }
+
+    test {
+        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
+        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
+        compileClasspath += sourceSets.client.compileClasspath + sourceSets.client.output
+        runtimeClasspath += sourceSets.client.runtimeClasspath + sourceSets.client.output
+    }
+}
+
+loom {
+    createRemapConfigurations(sourceSets.test)
+
+    mods {
+        create("test").sourceSet(sourceSets.test)
+        create("tla-api") {
+            sourceSet(sourceSets.main)
+            sourceSet(sourceSets.client)
+        }
+    }
 }
 
 dependencies {
@@ -38,23 +81,3 @@ tasks.processResources  {
         )
     }
 }
-
-/*
-sourceSets {
-    testmod {
-        compileClasspath += sourceSets.main.compileClasspath + sourceSets.main.output
-        runtimeClasspath += sourceSets.main.runtimeClasspath + sourceSets.main.output
-        compileClasspath += sourceSets.client.compileClasspath + sourceSets.client.output
-        runtimeClasspath += sourceSets.client.runtimeClasspath + sourceSets.client.output
-    }
-}
-
-loom {
-    createRemapConfigurations(sourceSets.testmod)
-    mods {
-      tlaapi_testmod {
-          sourceSet(sourceSets.testmod)
-      }
-    }
-}
-*/

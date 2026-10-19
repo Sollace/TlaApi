@@ -15,9 +15,9 @@ java {
     withSourcesJar()
 }
 
-repositories {
+/*repositories {
     maven("https://api.modrinth.com/maven")
-}
+}*/
 
 dependencies {
     fun Provider<MinimalExternalModuleDependency>.withClassifier(classifier: String) = variantOf(this) { this.classifier(classifier) }
