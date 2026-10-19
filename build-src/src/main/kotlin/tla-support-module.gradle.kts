@@ -21,7 +21,7 @@ val recipeModExtension = extensions.create<RecipeModExtension>("tla")
 
 val fabricModJson = project.tasks.register<FabricModJsonTask>("fabricModJson") {
     inputFile = file("${rootDir}/core/src/main/resources/fabric.mod.json")
-    outputFile = File(project.buildDir, "module_gensources/fabric.mod.json")
+    outputFile = File(project.layout.buildDirectory.getAsFile().get(), "module_gensources/fabric.mod.json")
     modid = "tla-api-${recipeModExtension.modid.get()}-support"
     displayname = "TLA-Api ${recipeModExtension.modid.get().uppercase()} Support Extension"
     modDescription = "Adds support for ${recipeModExtension.displayname.get()} using TLA API"
