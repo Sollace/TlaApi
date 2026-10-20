@@ -1,7 +1,5 @@
 package io.github.mattidragon.tlaapi.impl.client.rei.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import me.shedaniel.clothconfig2.api.animator.NumberAnimator;
 import me.shedaniel.clothconfig2.api.animator.ValueAnimator;
@@ -12,6 +10,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.ColorHelper;
 
 import java.util.Collections;
 import java.util.List;
@@ -72,12 +71,8 @@ public final class TextureWidget extends WidgetWithBounds {
         var width = bounds.width;
         var height = bounds.height;
 
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, alpha);
-
         var texture = dark ? darkTexture : lightTexture;
-        graphics.drawTexture(RenderLayer::getGuiTextured, texture, x, y, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
-
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        graphics.drawTexture(RenderLayer::getGuiTextured, texture, x, y, u, v, width, height, regionWidth, regionHeight, textureWidth, textureHeight, ColorHelper.getWhite(alpha));
     }
 
     @Override

@@ -102,7 +102,7 @@ public final class AnimatedTextureWidget extends WidgetWithBounds {
             }
         }
 
-        graphics.drawTexture(RenderLayer::getGuiTextured, texture, mx, my, mw, mh, mu, mv, mrw, mrh, textureWidth, textureHeight, ColorHelper.getWhite(alpha));
+        graphics.drawTexture(RenderLayer::getGuiTextured, texture, mx, my, mu, mv, mw, mh, mrw, mrh, textureWidth, textureHeight, ColorHelper.getWhite(alpha));
     }
 
     @Override
