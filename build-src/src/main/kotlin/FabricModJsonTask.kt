@@ -26,7 +26,7 @@ abstract class FabricModJsonTask : DefaultTask() {
 
     @get:Input
     abstract val modid: Property<String>
-    
+
     @get:Input
     abstract val displayname: Property<String>
 
@@ -35,6 +35,9 @@ abstract class FabricModJsonTask : DefaultTask() {
 
     @get:Input
     abstract val entrypoints: MapProperty<String, String>
+    
+    @get:Input
+    abstract val appendMode: Property<Boolean>
 
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
@@ -44,7 +47,7 @@ abstract class FabricModJsonTask : DefaultTask() {
         Files.newBufferedWriter(outputFile.getAsFile().get().toPath()).use { writer ->
             Files.newBufferedReader(inputFile.get().toPath(), StandardCharsets.UTF_8).use { reader ->
                 var json = JsonParser.parseReader(reader).getAsJsonObject()
-                val entryPointsJson = JsonObject()
+                val entryPointsJson = if (appendMode.get()) json.get("entrypoints").getAsJsonObject() else JsonObject()
                 entrypoints.get().forEach { id, type ->
                     var typesJson = JsonArray()
                     typesJson.add(type)

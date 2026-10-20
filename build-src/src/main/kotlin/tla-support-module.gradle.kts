@@ -19,13 +19,28 @@ System.out.println("Minecraft Version: ${minecraftVersion}, Fabric Version: ${fa
 
 val recipeModExtension = extensions.create<RecipeModExtension>("tla")
 
+val moduleId = "tla-api-${recipeModExtension.modid.get()}-support"
+val moduleName = "TLA-Api ${recipeModExtension.modid.get().uppercase()} Support Extension"
+val moduleDescription = "Adds support for ${recipeModExtension.displayname.get()} using TLA API"
+
 val fabricModJson = project.tasks.register<FabricModJsonTask>("fabricModJson") {
-    inputFile = file("${rootDir}/core/src/main/resources/fabric.mod.json")
+    inputFile = file(rootDir, "core/src/main/resources/fabric.mod.json")
     outputFile = File(project.layout.buildDirectory.getAsFile().get(), "module_gensources/fabric.mod.json")
-    modid = "tla-api-${recipeModExtension.modid.get()}-support"
-    displayname = "TLA-Api ${recipeModExtension.modid.get().uppercase()} Support Extension"
-    modDescription = "Adds support for ${recipeModExtension.displayname.get()} using TLA API"
+    modid = moduleId
+    displayname = moduleName
+    modDescription = moduleDescription
     entrypoints = recipeModExtension.entrypoints.get()
+    appendMode = false
+}
+
+var testFabricModJson = project.tasks.register<FabricModJsonTask>("testFabricModJson") {
+    inputFile = file(rootDir, "core/src/test/resources/fabric.mod.json")
+    outputFile = File("src/generated/resources/fabric.mod.json")
+    modid = moduleId
+    displayname = moduleName
+    modDescription = moduleDescription
+    entrypoints = recipeModExtension.entrypoints.get()
+    appendMode = true
 }
 
 project.version = rootProject.version
@@ -38,7 +53,11 @@ sourceSets {
         }
         resources {
             setSrcDirs(listOf("${rootDir}/core/src/test/resources"))
+            exclude("fabric.mod.json")
         }
+    }
+    
+    create("generated") {
     }
 }
 
@@ -50,8 +69,12 @@ project.loom {
             source(sourceSets["test"])
         }
     }
-    runs["client"].ideConfigGenerated(true)
-    runs["test_client"].ideConfigGenerated(true)
+
+    listOf("client", "test_client").forEach {
+        runs[it].ideConfigGenerated(true)
+        // Direct runs to the root project's shared directory
+        runs[it].runDir("../../run")
+    }
 }
 
 project.tasks.jar {
@@ -60,6 +83,7 @@ project.tasks.jar {
 }
 
 project.tasks.processResources {
+    dependsOn(testFabricModJson)
     inputs.property("version", project.version)
     filesMatching("fabric.mod.json") {
         expand(
