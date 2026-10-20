@@ -1,8 +1,6 @@
 {
   "type": "testmod:test_recipe",
-  "input": {
-    "item": "minecraft:stone"
-  },
+  "input": "minecraft:stone",
   "output": {
     "id": "minecraft:stone",
     "count": 2

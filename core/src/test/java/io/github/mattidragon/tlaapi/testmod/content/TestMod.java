@@ -33,6 +33,7 @@ public class TestMod implements ModInitializer {
     public void onInitialize() {
         Registry.register(Registries.RECIPE_SERIALIZER, "testmod:test_recipe", RECIPE_SERIALIZER);
         Registry.register(Registries.SCREEN_HANDLER, "testmod:test_screen_handler", SCREEN_HANDLER_TYPE);
+        Registry.register(Registries.RECIPE_DISPLAY, "testmod:test_recipe", RECIPE_DISPLAY_SERIALIZER);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             dispatcher.register(CommandManager.literal("testmod").executes(context -> {
