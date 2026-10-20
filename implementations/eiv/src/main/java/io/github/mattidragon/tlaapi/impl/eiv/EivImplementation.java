@@ -1,7 +1,6 @@
 package io.github.mattidragon.tlaapi.impl.eiv;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,8 +8,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.jetbrains.annotations.Nullable;
 
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
@@ -45,6 +45,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.impl.BuiltInCategoryRegistry;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -63,27 +64,38 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
             IEivRecipeViewType::getId
     );
 
-    private static final Map<BuiltInRecipeCategory, IEivRecipeViewType> VANILLA_CATEGORIES = Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
-        return Map.entry(type, switch (type) {
-            case CRAFTING_SHAPED -> new CraftingViewType();
-            case CRAFTING_SHAPELESS -> new ShapelessViewType();
-            case SMELTING -> new SmeltingViewType();
-            case BLASTING -> new BlastingViewType();
-            case SMOKING -> new SmokingViewType();
-            case CAMPFIRE_COOKING -> new CampfireViewType();
-            case STONECUTTING -> new StonecutterViewType();
-            case SMITHING -> new SmithingViewType();
-            case BREWING -> new BrewingViewType();
-            case VILLAGER_TRADING -> new VillagerViewType();
-            case SMELTING_FUEL, BLASTING_FUEL, SMOKING_FUEL -> new BurningViewType();
-            case LOOT -> new EntityViewType();
-            case ANVIL_REPAIRING, BEACON_PAYMENT, COMPOSTING, GRINDING, INFO,
-                WORLD_INTERACTION_BEACON_PYRAMID,
-                WORLD_INTERACTION_OTHER, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING,
-                WORLD_INTERACTION_WAXING, WORLD_INTERACTION_SCRAPING,
-                WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING -> null;
-        });
-    }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    private static final BuiltInCategoryRegistry<IEivRecipeViewType> VANILLA_CATEGORIES = new BuiltInCategoryRegistry<>() {
+        @Override
+        protected @Nullable IEivRecipeViewType getValue(BuiltInRecipeCategory type) {
+            return switch (type) {
+                case CRAFTING_SHAPED -> new CraftingViewType();
+                case CRAFTING_SHAPELESS -> new ShapelessViewType();
+                case SMELTING -> new SmeltingViewType();
+                case BLASTING -> new BlastingViewType();
+                case SMOKING -> new SmokingViewType();
+                case CAMPFIRE_COOKING -> new CampfireViewType();
+                case STONECUTTING -> new StonecutterViewType();
+                case SMITHING -> new SmithingViewType();
+                case BREWING -> new BrewingViewType();
+                case VILLAGER_TRADING -> new VillagerViewType();
+                case SMELTING_FUEL, BLASTING_FUEL, SMOKING_FUEL -> new BurningViewType();
+                case LOOT -> new EntityViewType();
+                case ANVIL_REPAIRING, BEACON_PAYMENT, COMPOSTING, GRINDING, INFO,
+                    WORLD_INTERACTION_BEACON_PYRAMID,
+                    WORLD_INTERACTION_OTHER, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING,
+                    WORLD_INTERACTION_WAXING, WORLD_INTERACTION_SCRAPING,
+                    WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING -> null;
+            };
+        }
+
+        @Override
+        protected BuiltInRecipeCategory getDistinctKey(BuiltInRecipeCategory type) {
+            return switch (type) {
+                case SMELTING_FUEL, BLASTING_FUEL, SMOKING_FUEL -> BuiltInRecipeCategory.SMELTING_FUEL;
+                default -> type;
+            };
+        }
+    };
 
     private static final Comparisons<?> COMPARISONS = Comparisons.noop(RecipeViewer.EIV);
     private PluginLoader.BootstrapContext bootstrapContext;

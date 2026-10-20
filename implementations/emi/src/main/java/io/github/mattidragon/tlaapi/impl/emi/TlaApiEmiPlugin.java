@@ -26,6 +26,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
+import io.github.mattidragon.tlaapi.impl.BuiltInCategoryRegistry;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import net.minecraft.client.gui.DrawContext;
@@ -40,20 +41,15 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.common.base.Suppliers;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import org.jetbrains.annotations.Nullable;
 
 public class TlaApiEmiPlugin implements EmiPlugin {
     @Override
@@ -73,29 +69,41 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         private PluginLoader.BootstrapContext bootstrapContext;
 
-        private final Supplier<BiMap<BuiltInRecipeCategory, EmiRecipeCategory>> vanillaCategories = Suppliers.memoize(() -> Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
-            return Map.entry(type, switch (type) {
-                case CRAFTING_SHAPED, CRAFTING_SHAPELESS -> VanillaEmiRecipeCategories.CRAFTING;
-                case SMELTING -> VanillaEmiRecipeCategories.SMELTING;
-                case BLASTING -> VanillaEmiRecipeCategories.BLASTING;
-                case SMOKING -> VanillaEmiRecipeCategories.SMOKING;
-                case CAMPFIRE_COOKING -> VanillaEmiRecipeCategories.CAMPFIRE_COOKING;
-                case STONECUTTING -> VanillaEmiRecipeCategories.STONECUTTING;
-                case SMITHING -> VanillaEmiRecipeCategories.SMITHING;
-                case ANVIL_REPAIRING -> VanillaEmiRecipeCategories.ANVIL_REPAIRING;
-                case GRINDING -> VanillaEmiRecipeCategories.GRINDING;
-                case BREWING -> VanillaEmiRecipeCategories.BREWING;
-                case BEACON_PAYMENT -> null;
-                case VILLAGER_TRADING -> null;
-                case LOOT -> null;
-                case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
-                        WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
-                        WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> VanillaEmiRecipeCategories.WORLD_INTERACTION;
-                case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> VanillaEmiRecipeCategories.FUEL;
-                case COMPOSTING -> VanillaEmiRecipeCategories.COMPOSTING;
-                case INFO -> VanillaEmiRecipeCategories.INFO;
-            });
-        }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length))));
+        private final BuiltInCategoryRegistry<EmiRecipeCategory> vanillaCategories = new BuiltInCategoryRegistry<>() {
+            @Override
+            protected @Nullable EmiRecipeCategory getValue(BuiltInRecipeCategory type) {
+                return switch (type) {
+                    case CRAFTING_SHAPED, CRAFTING_SHAPELESS -> VanillaEmiRecipeCategories.CRAFTING;
+                    case SMELTING -> VanillaEmiRecipeCategories.SMELTING;
+                    case BLASTING -> VanillaEmiRecipeCategories.BLASTING;
+                    case SMOKING -> VanillaEmiRecipeCategories.SMOKING;
+                    case CAMPFIRE_COOKING -> VanillaEmiRecipeCategories.CAMPFIRE_COOKING;
+                    case STONECUTTING -> VanillaEmiRecipeCategories.STONECUTTING;
+                    case SMITHING -> VanillaEmiRecipeCategories.SMITHING;
+                    case ANVIL_REPAIRING -> VanillaEmiRecipeCategories.ANVIL_REPAIRING;
+                    case GRINDING -> VanillaEmiRecipeCategories.GRINDING;
+                    case BREWING -> VanillaEmiRecipeCategories.BREWING;
+                    case BEACON_PAYMENT, VILLAGER_TRADING, LOOT -> null;
+                    case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
+                            WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
+                            WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> VanillaEmiRecipeCategories.WORLD_INTERACTION;
+                    case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> VanillaEmiRecipeCategories.FUEL;
+                    case COMPOSTING -> VanillaEmiRecipeCategories.COMPOSTING;
+                    case INFO -> VanillaEmiRecipeCategories.INFO;
+                };
+            }
+
+            protected BuiltInRecipeCategory getDistinctKey(BuiltInRecipeCategory type) {
+                return switch (type) {
+                    case CRAFTING_SHAPED, CRAFTING_SHAPELESS -> BuiltInRecipeCategory.CRAFTING_SHAPED;
+                    case WORLD_INTERACTION_BEACON_PYRAMID, WORLD_INTERACTION_STRIPPING, WORLD_INTERACTION_SCRAPING,
+                            WORLD_INTERACTION_TILLING, WORLD_INTERACTION_FLATTENING, WORLD_INTERACTION_WAXING,
+                            WORLD_INTERACTION_OXIDIZING, WORLD_INTERACTION_DEOXIDIZING, WORLD_INTERACTION_OTHER -> BuiltInRecipeCategory.WORLD_INTERACTION_OTHER;
+                    case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> BuiltInRecipeCategory.BLASTING_FUEL;
+                    default -> type;
+                };
+            }
+        };
 
         private EmiImplementation(EmiRegistry registry, PluginLoader.BootstrapContext bootstrapContext) {
             this.registry = registry;
@@ -122,7 +130,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         @Override
         public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
-            return Optional.ofNullable(vanillaCategories.get().get(type)).map(category -> builtInCategories.computeIfAbsent(category, id -> new WrappedEmiCategory(type, id, type.getSize())));
+            return vanillaCategories.getOptional(type).map(category -> builtInCategories.computeIfAbsent(category, id -> new WrappedEmiCategory(type, id, type.getSize())));
         }
 
         @Override
@@ -157,7 +165,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
             return Objects.requireNonNull(viewer == getActiveViewer() ? null : bootstrapContext.getPluginContext(viewer)
                     .flatMap(ctx -> ctx.getVanillaCategory(category))
-                    .map(type -> vanillaCategories.get().get(type))
+                    .map(vanillaCategories::get)
                     .orElse(null), "Category " + category + " not registered");
         }
 
@@ -193,7 +201,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 return c.category;
             }
 
-            return Optional.ofNullable(vanillaCategories.get().inverse().get(categoryId))
+            return vanillaCategories.getOptional(categoryId)
                 .flatMap(this::getVanillaCategory)
                 .orElseGet(() -> builtInCategories.computeIfAbsent(categoryId, i -> new WrappedEmiCategory(null, i, size)));
         }

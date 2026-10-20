@@ -20,6 +20,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
+import io.github.mattidragon.tlaapi.impl.BuiltInCategoryRegistry;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
@@ -41,7 +42,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
@@ -49,35 +49,47 @@ import org.jetbrains.annotations.Nullable;
 public class ReiImplementation implements PluginContext {
     public static ReiImplementation INSTANCE;
 
-    private static final BiMap<BuiltInRecipeCategory, CategoryIdentifier<?>> VANILLA_CATEGORIES = Arrays.stream(BuiltInRecipeCategory.values()).map(type -> {
-        return Map.entry(type, switch (type) {
-            case CRAFTING_SHAPELESS, CRAFTING_SHAPED -> CategoryIdentifier.of("minecraft", "plugins/crafting");
-            case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
-            case BLASTING -> CategoryIdentifier.of("minecraft", "plugins/blasting");
-            case SMOKING -> CategoryIdentifier.of("minecraft", "plugins/smoking");
-            case CAMPFIRE_COOKING -> CategoryIdentifier.of("minecraft", "plugins/campfire");
-            case STONECUTTING -> CategoryIdentifier.of("minecraft", "plugins/stone_cutting");
-            case SMITHING -> CategoryIdentifier.of("minecraft", "plugins/smithing");
-            case ANVIL_REPAIRING -> CategoryIdentifier.of("minecraft", "plugins/anvil");
-            case GRINDING -> null;//RecipeTypes.GRINDING;
-            case BREWING -> CategoryIdentifier.of("minecraft", "plugins/brewing");
-            case BEACON_PAYMENT -> CategoryIdentifier.of("minecraft", "plugins/beacon_payment");
-            case VILLAGER_TRADING -> null;
-            case LOOT -> null;
-            case WORLD_INTERACTION_BEACON_PYRAMID -> CategoryIdentifier.of("minecraft", "plugins/beacon_base");
-            case WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
-            case WORLD_INTERACTION_STRIPPING -> CategoryIdentifier.of("minecraft", "plugins/stripping");
-            case WORLD_INTERACTION_SCRAPING -> CategoryIdentifier.of("minecraft", "plugins/wax_scraping");
-            case WORLD_INTERACTION_TILLING -> CategoryIdentifier.of("minecraft", "plugins/tilling");
-            case WORLD_INTERACTION_FLATTENING -> CategoryIdentifier.of("minecraft", "plugins/pathing");
-            case WORLD_INTERACTION_WAXING -> CategoryIdentifier.of("minecraft", "plugins/waxing");
-            case WORLD_INTERACTION_OXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidizing");
-            case WORLD_INTERACTION_DEOXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidation_scraping");
-            case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
-            case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
-            case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
-        });
-    }).filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> b, () -> HashBiMap.create(BuiltInRecipeCategory.values().length)));
+    private static final BuiltInCategoryRegistry<CategoryIdentifier<?>> VANILLA_CATEGORIES = new BuiltInCategoryRegistry<>() {
+        @Override
+        protected @Nullable CategoryIdentifier<?> getValue(BuiltInRecipeCategory type) {
+            return switch (type) {
+                case CRAFTING_SHAPELESS, CRAFTING_SHAPED -> CategoryIdentifier.of("minecraft", "plugins/crafting");
+                case SMELTING -> CategoryIdentifier.of("minecraft", "plugins/smelting");
+                case BLASTING -> CategoryIdentifier.of("minecraft", "plugins/blasting");
+                case SMOKING -> CategoryIdentifier.of("minecraft", "plugins/smoking");
+                case CAMPFIRE_COOKING -> CategoryIdentifier.of("minecraft", "plugins/campfire");
+                case STONECUTTING -> CategoryIdentifier.of("minecraft", "plugins/stone_cutting");
+                case SMITHING -> CategoryIdentifier.of("minecraft", "plugins/smithing");
+                case ANVIL_REPAIRING -> CategoryIdentifier.of("minecraft", "plugins/anvil");
+                case GRINDING -> null;//RecipeTypes.GRINDING;
+                case BREWING -> CategoryIdentifier.of("minecraft", "plugins/brewing");
+                case BEACON_PAYMENT -> CategoryIdentifier.of("minecraft", "plugins/beacon_payment");
+                case VILLAGER_TRADING -> null;
+                case LOOT -> null;
+                case WORLD_INTERACTION_BEACON_PYRAMID -> CategoryIdentifier.of("minecraft", "plugins/beacon_base");
+                case WORLD_INTERACTION_OTHER -> null;//RecipeTypes.WORLD_INTERACTION;
+                case WORLD_INTERACTION_STRIPPING -> CategoryIdentifier.of("minecraft", "plugins/stripping");
+                case WORLD_INTERACTION_SCRAPING -> CategoryIdentifier.of("minecraft", "plugins/wax_scraping");
+                case WORLD_INTERACTION_TILLING -> CategoryIdentifier.of("minecraft", "plugins/tilling");
+                case WORLD_INTERACTION_FLATTENING -> CategoryIdentifier.of("minecraft", "plugins/pathing");
+                case WORLD_INTERACTION_WAXING -> CategoryIdentifier.of("minecraft", "plugins/waxing");
+                case WORLD_INTERACTION_OXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidizing");
+                case WORLD_INTERACTION_DEOXIDIZING -> CategoryIdentifier.of("minecraft", "plugins/oxidation_scraping");
+                case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> CategoryIdentifier.of("minecraft", "plugins/fuel");
+                case COMPOSTING -> CategoryIdentifier.of("minecraft", "plugins/composting");
+                case INFO -> CategoryIdentifier.of("roughlyenoughitems", "plugins/information");
+            };
+        }
+
+        @Override
+        protected BuiltInRecipeCategory getDistinctKey(BuiltInRecipeCategory type) {
+            return switch(type) {
+                case CRAFTING_SHAPELESS -> BuiltInRecipeCategory.CRAFTING_SHAPED;
+                case BLASTING_FUEL, SMELTING_FUEL, SMOKING_FUEL -> BuiltInRecipeCategory.BLASTING_FUEL;
+                default -> type;
+            };
+        }
+    };
 
     public final Map<CategoryIdentifier<?>, WrappedEmiCategory> builtInCategories = new HashMap<>();
     public final BiMap<TlaCategory, CategoryIdentifier<TlaDisplay>> categories = HashBiMap.create();
@@ -154,7 +166,7 @@ public class ReiImplementation implements PluginContext {
             return tla;
         }
 
-        return Optional.ofNullable(VANILLA_CATEGORIES.inverse().get(categoryId))
+        return VANILLA_CATEGORIES.getOptional(categoryId)
             .flatMap(this::getVanillaCategory)
             .orElseGet(() -> builtInCategories.computeIfAbsent(categoryId, i -> new WrappedEmiCategory(null, i, new int[] { 0, 0 })));
     }

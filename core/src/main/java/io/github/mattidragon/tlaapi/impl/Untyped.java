@@ -24,7 +24,7 @@ public final class Untyped {
     private record Memoize<A>(AtomicReference<Optional<A>> ref, Supplier<A> supplier) implements Supplier<A> {
         @Override
         public A get() {
-            return ref.getAndUpdate(a -> {
+            return ref.updateAndGet(a -> {
                 return a == null ? Optional.ofNullable(supplier.get()) : a;
             }).orElse(null);
         }
