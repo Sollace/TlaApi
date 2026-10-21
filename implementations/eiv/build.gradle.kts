@@ -14,16 +14,10 @@ tla {
 }
 
 dependencies {
-    mapped("https://api.modrinth.com/maven", rootProject.libs.eiv.fabric) { path -> 
-        path.contains("/api/")
-         || path.contains("RecipeViewMenu")
-         || path.contains("RecipeViewScreen")
-         || path.contains("OptionalSlotRenderer")
-         || path.contains("ItemViewRecipes")
-         || path.contains("SlotContent")
-         || path.contains("/builtin/")
-         || path.contains("FluidStack")
-    }
-    modCompileOnly(rootProject.libs.eiv.api.fabric)
+    modCompileOnly(apiDependency(
+        "https://api.modrinth.com/maven",
+        rootProject.libs.eiv.fabric,
+        ".*(/api/|/builtin/|RecipeViewMenu|RecipeViewScreen|OptionalSlotRenderer|ItemViewRecipes|SlotContent|FluidStack).*"
+    ))
     modRuntimeOnly(rootProject.libs.eiv.fabric)
 }

@@ -1,1 +1,1 @@
-project.extensions.create<Mapped>("mapped")
+project.extensions.create<MappedDependencyExtension>("apiDependency")

@@ -13,6 +13,7 @@ import java.nio.file.Path as nioPath
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
@@ -21,8 +22,8 @@ import org.gradle.api.provider.MapProperty
 import org.gradle.api.file.RegularFileProperty
 
 abstract class FabricModJsonTask : DefaultTask() {
-    @get:Input
-    abstract val inputFile: Property<File>
+    @get:InputFile
+    abstract val inputFile: RegularFileProperty
 
     @get:Input
     abstract val modid: Property<String>
@@ -45,7 +46,7 @@ abstract class FabricModJsonTask : DefaultTask() {
     @TaskAction
     fun action() {
         Files.newBufferedWriter(outputFile.getAsFile().get().toPath()).use { writer ->
-            Files.newBufferedReader(inputFile.get().toPath(), StandardCharsets.UTF_8).use { reader ->
+            Files.newBufferedReader(inputFile.getAsFile().get().toPath(), StandardCharsets.UTF_8).use { reader ->
                 var json = JsonParser.parseReader(reader).getAsJsonObject()
                 val entryPointsJson = if (appendMode.get()) json.get("entrypoints").getAsJsonObject() else JsonObject()
                 entrypoints.get().forEach { id, type ->

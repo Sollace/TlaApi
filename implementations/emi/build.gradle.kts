@@ -15,8 +15,6 @@ tla {
 }
 
 dependencies {
-    fun Provider<MinimalExternalModuleDependency>.withClassifier(classifier: String) = variantOf(this) { this.classifier(classifier) }
-
-    modCompileOnly(rootProject.libs.emi.withClassifier("api"))
+    modCompileOnly(variantOf(rootProject.libs.emi) { classifier("api") })
     modRuntimeOnly(rootProject.libs.emi)
 }

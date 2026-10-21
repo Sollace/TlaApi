@@ -1,9 +1,6 @@
 plugins {
     id("tla-support-module")
-}
-
-loom {
-    splitEnvironmentSourceSets()
+    id("split-sources")
 }
 
 /*repositories {
@@ -21,8 +18,6 @@ tla {
 }
 
 dependencies {
-    fun Provider<MinimalExternalModuleDependency>.withClassifier(classifier: String) = variantOf(this) { this.classifier(classifier) }
-
     modCompileOnly(rootProject.libs.rei.api)
     modCompileOnly(rootProject.libs.rei.plugin.default)
     // For some reason arch isn't a transitive dependency of rei-api, so we need to manually add it to use a few classes

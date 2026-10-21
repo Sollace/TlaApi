@@ -41,6 +41,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "TlaApi"
 includeBuild("build-src")
-include(":core")
+include(":core", ":testmod")
 include(getProp("recipe_mod_modules").split(" ").map{ module -> "implementations:${module}" })
 

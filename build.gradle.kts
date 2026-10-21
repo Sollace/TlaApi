@@ -1,8 +1,7 @@
-import org.gradle.kotlin.dsl.support.uppercaseFirstChar
-
 plugins {
     id("maven-publish")
     id("fabric-loom") version "1.10-SNAPSHOT"
+    id("split-sources")
     //id("org.ajoberstar.reckon") version "0.13.1"
 }
 
@@ -38,43 +37,9 @@ java {
     withSourcesJar()
 }
 
-loom {
-    splitEnvironmentSourceSets()
-}
-
-sourceSets {
-    main {
-        java {
-            setSrcDirs(listOf("core/src/main/java"))
-        }
-        resources {
-            setSrcDirs(listOf("core/src/main/resources"))
-        }
-    }
-
-    named("client") {
-        java {
-            setSrcDirs(listOf("core/src/client/java"))
-        }
-    }
-}
-
-loom {
-    mods {
-        create("tla-api") {
-            sourceSet(sourceSets.main)
-            sourceSet(sourceSets.client)
-        }
-    }
-}
-
 dependencies {
-    fun Provider<MinimalExternalModuleDependency>.withClassifier(classifier: String) = variantOf(this) { this.classifier(classifier) }
-
     minecraft(rootProject.libs.minecraft)
-    mappings(rootProject.libs.fabric.yarn.withClassifier("v2"))
-    modImplementation(rootProject.libs.fabric.loader)
-    modImplementation(rootProject.libs.fabric.api)
+    mappings(variantOf(rootProject.libs.fabric.yarn) { classifier("v2") })
 
     enabledRecipeModModules.forEach { impl ->
         if (impl.length > 0) {
