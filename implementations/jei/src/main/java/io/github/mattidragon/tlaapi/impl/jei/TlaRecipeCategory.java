@@ -23,13 +23,11 @@ class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     private final TlaCategory category;
     private final IRecipeType<PreparedRecipe> type;
     private final IDrawable icon;
-    private final IDrawable background;
 
     public TlaRecipeCategory(IJeiHelpers helpers, TlaCategory category) {
         this.category = category;
         this.type = IRecipeType.create(category.getId().getNamespace(), category.getId().getPath(), PreparedRecipe.class);
         this.icon = JeiUtils.iconToDrawable(helpers, category.getIcon());
-        this.background = helpers.getGuiHelper().createBlankDrawable(category.getDisplayWidth(), category.getDisplayHeight());
     }
 
     @Override
@@ -43,8 +41,13 @@ class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
     }
 
     @Override
-    public IDrawable getBackground() {
-        return background;
+    public int getWidth() {
+        return category.getDisplayWidth();
+    }
+
+    @Override
+    public int getHeight() {
+        return category.getDisplayHeight();
     }
 
     @Override
