@@ -2,7 +2,11 @@ plugins {
     id("fabric-loom")
 }
 
-version = rootProject.version
+if (project != rootProject) {
+    // Root project configures reckon (only root project can do that)
+    version = rootProject.version
+}
+
 group = rootProject.group
 
 val minecraftVersion = rootProject.property("minecraft_version") as String
@@ -31,10 +35,10 @@ configurations.all {
 }
 
 tasks.processResources  {
-    inputs.property("version", project.version)
+    inputs.property("version", project.version.toString())
     filesMatching("fabric.mod.json") {
         expand(
-          "version" to project.version,
+          "version" to project.version.toString(),
           "loader_version" to loaderVersion,
           "fabric_version" to fabricVersion,
           "minecraft_version" to minecraftVersion

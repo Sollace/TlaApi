@@ -1,18 +1,34 @@
+import dex.plugins.outlet.v2.util.ReleaseType
+
 plugins {
     id("maven-publish")
     id("fabric-loom") version "1.10-SNAPSHOT"
+    id("com.modrinth.minotaur") version "2.+"
+    id("org.ajoberstar.reckon") version "0.13.1"
+    id("io.github.dexman545.outlet") version "1.6.1"
     id("split-sources")
-    //id("org.ajoberstar.reckon") version "0.13.1"
+    id("minecraft-mod")
 }
 
-val minecraftVersion = property("minecraft_version") as String
-val yarnMappings = property("yarn_mappings") as String
-val loaderVersion = property("loader_version") as String
-val fabricVersion = property("fabric_version") as String
+group = "io.github.mattidragon"
+
 val enabledRecipeModModules = (property("recipe_mod_modules") as String).split(" ")
 
-version = "${property("mod_version")}+${minecraftVersion}"
-group = "io.github.mattidragon"
+reckon {
+    scopeFromProp()
+    stageFromProp("beta", "rc", "final", "mc" /*legacy tags. Do not use*/)
+}
+
+outlet {
+    if ("true".equals(property("minecraft_version_allow_snapshot") as String)) {
+        allowedReleaseTypes.add(ReleaseType.SNAPSHOT)
+    } else {
+        allowedReleaseTypes.remove(ReleaseType.SNAPSHOT)
+    }
+    mcVersionRange = property("minecraft_version_range") as String
+}
+
+System.out.println("Outlet MC Versions: ${outlet.mcVersions()}")
 
 subprojects {
     repositories {
@@ -25,39 +41,12 @@ subprojects {
     }
 }
 
-val SourceSetContainer.client: SourceSet
-    get() = this["client"]
-val SourceSetContainer.main: SourceSet
-    get() = this["main"]
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-    withSourcesJar()
-}
-
 dependencies {
-    minecraft(rootProject.libs.minecraft)
-    mappings(variantOf(rootProject.libs.fabric.yarn) { classifier("v2") })
-
     enabledRecipeModModules.forEach { impl ->
         if (impl.length > 0) {
             implementation(project(path = ":implementations:${impl}", configuration = "namedElements"))
             include(project(":implementations:${impl}"))
         }
-    }
-}
-
-tasks.processResources  {
-    inputs.property("version", project.version)
-    filesMatching("fabric.mod.json") {
-        expand(
-          "version" to project.version,
-          "loader_version" to loaderVersion,
-          "fabric_version" to fabricVersion,
-          "minecraft_version" to minecraftVersion
-        )
     }
 }
 
@@ -78,6 +67,23 @@ val apiJar = tasks.register<Jar>("apiJar") {
 
 tasks.build {
     dependsOn(apiJar)
+}
+
+modrinth {
+    token.set(System.getenv("MODRINTH_KEY"))
+    projectId.set(property("modrinth_project_id") as String)
+    //featured = true
+    versionNumber.set(version.toString())
+    versionName.set("${project.name}-${version}")
+    changelog.set("[Changelog](https://github.com/MattiDragon/TlaApi/releases/tag/${version.toString()})")
+    loaders.add("fabric")
+    uploadFile.set(tasks.remapJar)
+    outlet.mcVersions().forEach{ver ->
+        gameVersions.add(ver)
+    }
+    dependencies {
+        required.project("P7dR8mSH") // Fabric API
+    }
 }
 
 publishing {

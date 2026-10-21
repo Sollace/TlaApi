@@ -3,6 +3,13 @@ pluginManagement {
         maven("https://maven.fabricmc.net/") {
             name = "Fabric"
         }
+        maven("https://jitpack.io") {
+            name = "Jitpack"
+            content {
+                includeGroup("com.github.dexman545")
+                includeGroup("com.github.dexman545.Outlet")
+            }
+        }
         mavenCentral()
         gradlePluginPortal()
     }
