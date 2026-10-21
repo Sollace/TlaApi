@@ -20,12 +20,16 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.Nullable;
 
+import com.mojang.serialization.Codec;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.DoubleSupplier;
 
 class PreparedRecipe {
+    public static final Codec<PreparedRecipe> CODEC = TlaRecipe.CODEC.xmap(recipe -> new PreparedRecipe(TlaApiJeiPlugin.JEI_HELPERS, recipe), recipe -> recipe.recipe);
+
     private final IJeiHelpers helpers;
     private final TlaRecipe recipe;
     private final List<SlotBuilder> slots = new ArrayList<>();

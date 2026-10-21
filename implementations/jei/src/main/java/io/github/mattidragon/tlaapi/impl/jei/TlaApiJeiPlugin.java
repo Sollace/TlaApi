@@ -9,6 +9,7 @@ import mezz.jei.api.gui.handlers.IGhostIngredientHandler;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.gui.handlers.IGuiProperties;
+import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
@@ -33,6 +34,8 @@ import java.util.stream.StreamSupport;
 public class TlaApiJeiPlugin implements IModPlugin {
     private TlaApiJeiPluginContext context;
 
+    static IJeiHelpers JEI_HELPERS;
+
     @Override
     public Identifier getPluginUid() {
         return Identifier.of("tla-api", "plugin");
@@ -42,6 +45,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
     public void registerCategories(IRecipeCategoryRegistration registration) {
         // This is the earliest event, and we don't get anything before that.
         context = new TlaApiJeiPluginContext();
+        JEI_HELPERS = registration.getJeiHelpers();
         registration.addRecipeCategories(context.categories.stream()
                 .map(category -> context.preparedCategories.computeIfAbsent(category, c -> new TlaRecipeCategory(registration.getJeiHelpers(), c)))
                 .toArray(IRecipeCategory[]::new));

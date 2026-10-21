@@ -81,6 +81,6 @@ class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
 
     @Override
     public Codec<PreparedRecipe> getCodec(ICodecHelper codecHelper, IRecipeManager recipeManager) {
-        return null;
+        return PreparedRecipe.CODEC;
     }
 }
