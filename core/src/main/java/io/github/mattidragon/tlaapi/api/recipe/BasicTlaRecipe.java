@@ -30,7 +30,7 @@ public record BasicTlaRecipe (
             TlaCategory.CODEC.fieldOf("category").forGetter(BasicTlaRecipe::category),
             RegistryKey.createCodec(RegistryKeys.RECIPE).fieldOf("id").forGetter(BasicTlaRecipe::id),
             MoreCodecs.supplierOf(TlaIngredient.CODEC.listOf()).fieldOf("inputs").forGetter(BasicTlaRecipe::inputs),
-            MoreCodecs.supplierOf(TlaStack.CODEC.codec().listOf()).fieldOf("outputs").forGetter(BasicTlaRecipe::outputs),
+            MoreCodecs.supplierOf(TlaStack.CODEC.listOf()).fieldOf("outputs").forGetter(BasicTlaRecipe::outputs),
             MoreCodecs.supplierOf(TlaIngredient.CODEC.listOf()).fieldOf("inputs").forGetter(BasicTlaRecipe::catalysts)
     ).apply(i, BasicTlaRecipe::new));
     private static final PacketCodec<RegistryByteBuf, BasicTlaRecipe> PACKET_CODEC = PacketCodec.tuple(

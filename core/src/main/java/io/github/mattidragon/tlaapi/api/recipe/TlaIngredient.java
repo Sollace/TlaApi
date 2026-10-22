@@ -33,7 +33,7 @@ public record TlaIngredient (Collection<? extends TlaStack> stacks) {
      */
     public static final TlaIngredient EMPTY = new TlaIngredient(List.of());
 
-    public static final Codec<TlaIngredient> CODEC = TlaStack.CODEC.codec().listOf().xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
+    public static final Codec<TlaIngredient> CODEC = TlaStack.CODEC.listOf().xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
     public static final PacketCodec<RegistryByteBuf, TlaIngredient> PACKET_CODEC = TlaStack.PACKET_CODEC.collect(PacketCodecs.toList()).xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
 
     public TlaIngredient {

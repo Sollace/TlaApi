@@ -15,18 +15,22 @@ import net.minecraft.recipe.display.SlotDisplay;
 import net.minecraft.recipe.display.SlotDisplay.EmptySlotDisplay;
 import net.minecraft.recipe.display.SlotDisplayContexts;
 import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.context.ContextParameterMap;
+import net.minecraft.util.dynamic.Codecs;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
+import java.util.function.Supplier;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.mojang.datafixers.util.Either;
+import com.mojang.datafixers.util.Function4;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
@@ -40,47 +44,38 @@ import io.github.mattidragon.tlaapi.impl.Untyped;
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack, TlaStack.TlaEmptyStack {
-    private static final Codec<Either<Fluid, Item>> VARIANT_CODEC = RegistryKey.createCodec(Registries.REGISTRIES.getKey())
-            .<RegistryEntry<?>>dispatch("type", TlaStack::toRegistryRef, key -> toRegistry(key).getEntryCodec().fieldOf(key.getValue().getPath()))
-            .validate(entry -> entry.getKey().orElseThrow().isOf(RegistryKeys.ITEM) || entry.getKey().orElseThrow().isOf(RegistryKeys.FLUID)
-                            ? DataResult.success(entry) : DataResult.error(() -> "TlaStack must be of Item or Fluid. Instead got '" + toRegistryRef(entry) + "'", entry))
-            .xmap(TlaStack::toVariant, TlaStack::fromVariant);
-
-    private static final PacketCodec<RegistryByteBuf, Either<Fluid, Item>> VARIANT_PACKET_CODEC = RegistryKey.createPacketCodec(Registries.REGISTRIES.getKey())
-            .<RegistryByteBuf>cast()
-            .<RegistryEntry<?>>dispatch(TlaStack::toRegistryRef, PacketCodecs::registryEntry)
-            .xmap(TlaStack::toVariant, TlaStack::fromVariant);
-
-    private static <T> RegistryKey<Registry<T>> toRegistryRef(RegistryEntry<T> entry) {
-        return entry.getKey().orElseThrow().getRegistryRef();
+    static <X, T extends TlaStack> MapCodec<T> createCodec(MapCodec<RegistryEntry<X>> variantCodec, Function4<RegistryEntry<X>, ComponentChanges, Long, OptionalDouble, T> constructor) {
+        return RecordCodecBuilder.mapCodec(i -> i.group(
+                variantCodec.forGetter(o -> Untyped.cast(o.variant)),
+                ComponentChanges.CODEC.optionalFieldOf("components", ComponentChanges.EMPTY).forGetter(TlaStack::getComponents),
+                Codec.LONG.fieldOf("amount").forGetter(TlaStack::getAmount),
+                MoreCodecs.OPTIONAL_DOUBLE_CODEC.optionalFieldOf("chance", OptionalDouble.empty()).forGetter(TlaStack::getChance)
+        ).apply(i, constructor));
     }
 
-    private static <T> Registry<T> toRegistry(RegistryKey<? extends Registry<T>> key) {
-        return Untyped.cast(Registries.REGISTRIES.getValueOrThrow(Untyped.cast(key)));
+    static <X, T extends TlaStack> PacketCodec<RegistryByteBuf, T> createPacketCodec(PacketCodec<RegistryByteBuf, RegistryEntry<X>> variantCodec, Function4<RegistryEntry<X>, ComponentChanges, Long, OptionalDouble, T> constructor) {
+        return PacketCodec.tuple(
+                variantCodec, o -> Untyped.cast(o.variant),
+                ComponentChanges.PACKET_CODEC, TlaStack::getComponents,
+                PacketCodecs.LONG, TlaStack::getAmount,
+                MoreCodecs.OPTIONAL_DOUBLE_PACKET_CODEC, TlaStack::getChance,
+                constructor
+        );
     }
 
-    private static Either<Fluid, Item> toVariant(RegistryEntry<?> entry) {
-        return entry.getKey().orElseThrow().isOf(RegistryKeys.FLUID) ? Either.left((Fluid)entry.value()) : Either.right((Item)entry.value());
-    }
-
-    @SuppressWarnings("deprecation")
-    private static RegistryEntry<?> fromVariant(Either<Fluid, Item> either) {
-        return Either.unwrap(either.mapBoth(Fluid::getRegistryEntry, Item::getRegistryEntry));
-    }
-
-    public static final MapCodec<TlaStack> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
-            VARIANT_CODEC.fieldOf("item").forGetter(TlaStack::getVariant),
-            ComponentChanges.CODEC.optionalFieldOf("components", ComponentChanges.EMPTY).forGetter(TlaStack::getComponents),
-            Codec.LONG.fieldOf("amount").forGetter(o -> o.amount),
-            MoreCodecs.OPTIONAL_DOUBLE_CODEC.optionalFieldOf("chance", OptionalDouble.empty()).forGetter(o -> o.chance)
-    ).apply(i, TlaStack::of));
-    public static final PacketCodec<RegistryByteBuf, TlaStack> PACKET_CODEC = PacketCodec.tuple(
-            VARIANT_PACKET_CODEC, TlaStack::getVariant,
-            ComponentChanges.PACKET_CODEC, TlaStack::getComponents,
-            PacketCodecs.LONG, o -> o.amount,
-            MoreCodecs.OPTIONAL_DOUBLE_PACKET_CODEC, o -> o.chance,
-            TlaStack::of
-    );
+    private static final Supplier<BiMap<Identifier, Type>> REGISTRY = Untyped.memoize(() -> HashBiMap.create(Map.of(
+            Identifier.ofVanilla("empty"), TlaEmptyStack.TYPE.get(),
+            Identifier.ofVanilla("fluid"), TlaFluidStack.TYPE,
+            Identifier.ofVanilla("item"), TlaItemStack.TYPE
+    )));
+    public static final Codec<TlaStack> CODEC = Codecs.idChecked(Identifier.CODEC,
+                id -> REGISTRY.get().get(id),
+                type -> REGISTRY.get().inverse().get(type)
+            ).dispatch("type", TlaStack::type, Type::codec);
+    public static final PacketCodec<RegistryByteBuf, TlaStack> PACKET_CODEC = Identifier.PACKET_CODEC.xmap(
+                id -> REGISTRY.get().get(id),
+                type -> REGISTRY.get().inverse().get(type)
+            ).<RegistryByteBuf>cast().dispatch(TlaStack::type, Type::packetCodec);
 
     protected final long amount;
     protected final OptionalDouble chance;
@@ -88,21 +83,22 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
 
     protected final ComponentChanges components;
 
+    protected final Type type;
+
+    record Type(MapCodec<? extends TlaStack> codec, PacketCodec<RegistryByteBuf, ? extends TlaStack> packetCodec) {}
+
     static final DisplayedItemFactory.FromStack<TlaStack> DISPLAYED_ITEM_FACTORY = TlaStack::of;
 
-    protected TlaStack(long amount, OptionalDouble chance, RegistryEntry<?> variant, ComponentChanges components) {
+    protected TlaStack(Type type, long amount, OptionalDouble chance, RegistryEntry<?> variant, ComponentChanges components) {
+        this.type = type;
         this.amount = amount;
         this.chance = chance;
         this.variant = variant;
         this.components = components;
     }
 
-    @SuppressWarnings("deprecation")
-    private static TlaStack of(Either<Fluid, Item> variant, ComponentChanges components, long amount, OptionalDouble chance) {
-        return Either.unwrap(variant.mapBoth(
-                fluid -> new TlaFluidStack(fluid.getRegistryEntry(), components, amount, chance),
-                item -> new TlaItemStack(item.getRegistryEntry(), components, amount, chance)
-        ));
+    protected Type type() {
+        return type;
     }
 
     /**
@@ -205,11 +201,12 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
     }
 
     public static final class TlaEmptyStack extends TlaStack {
+        static final Supplier<Type> TYPE = Untyped.memoize(() -> new Type(MapCodec.unit(TlaEmptyStack.INSTANCE), PacketCodec.unit(TlaEmptyStack.INSTANCE)));
         static final TlaEmptyStack INSTANCE = new TlaEmptyStack();
 
         @SuppressWarnings("deprecation")
         private TlaEmptyStack() {
-            super(0, OptionalDouble.empty(), Items.AIR.getRegistryEntry(), ComponentChanges.EMPTY);
+            super(TYPE.get(), 0, OptionalDouble.empty(), Items.AIR.getRegistryEntry(), ComponentChanges.EMPTY);
         }
 
         @Override
@@ -245,8 +242,13 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
     }
 
     public static final class TlaFluidStack extends TlaStack {
+        static final Type TYPE = new Type(
+                createCodec(Registries.FLUID.getEntryCodec().fieldOf("fluid"), TlaFluidStack::new),
+                createPacketCodec(PacketCodecs.registryEntry(RegistryKeys.FLUID), TlaFluidStack::new)
+        );
+
         private TlaFluidStack(RegistryEntry<Fluid> fluid, ComponentChanges components, long amount, OptionalDouble chance) {
-            super(amount, chance, fluid, components);
+            super(TYPE, amount, chance, fluid, components);
         }
 
         @Override
@@ -305,9 +307,13 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
     }
 
     public static final class TlaItemStack extends TlaStack {
+        static final Type TYPE = new Type(
+            createCodec(Registries.ITEM.getEntryCodec().fieldOf("item"), TlaItemStack::new),
+            createPacketCodec(PacketCodecs.registryEntry(RegistryKeys.ITEM), TlaItemStack::new)
+        );
 
         private TlaItemStack(RegistryEntry<Item> item, ComponentChanges components, long amount, OptionalDouble chance) {
-            super(amount, chance, item, components);
+            super(TYPE, amount, chance, item, components);
         }
 
         @Override

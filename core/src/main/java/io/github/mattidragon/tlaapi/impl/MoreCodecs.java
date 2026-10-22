@@ -4,7 +4,6 @@ import java.util.OptionalDouble;
 import java.util.function.Supplier;
 
 import com.mojang.serialization.Codec;
-
 import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
