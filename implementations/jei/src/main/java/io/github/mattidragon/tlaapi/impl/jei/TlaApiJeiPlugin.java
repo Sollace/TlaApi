@@ -165,7 +165,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
                                     @Override
                                     public void accept(I ingredient) {
-                                        target.ingredientConsumer().apply(JeiUtils.convertStack(typedIngredient));
+                                        target.ingredientConsumer().apply(JeiUtils.convertStack(registration.getJeiHelpers().getPlatformFluidHelper(), typedIngredient));
                                     }
                                 })
                                 .toList();

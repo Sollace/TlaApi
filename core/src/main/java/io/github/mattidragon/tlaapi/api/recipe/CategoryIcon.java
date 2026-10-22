@@ -2,8 +2,6 @@ package io.github.mattidragon.tlaapi.api.recipe;
 
 import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.impl.ImplementationOnly;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
-import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemConvertible;
@@ -29,24 +27,10 @@ public sealed interface CategoryIcon permits CategoryIcon.StackIcon, CategoryIco
     }
 
     /**
-     * Creates a new icon from the provided item variant.
-     */
-    static CategoryIcon item(ItemVariant item) {
-        return item.isBlank() ? empty() : stack(TlaStack.of(item));
-    }
-
-    /**
      * Creates a new icon from the provided item.
      */
     static CategoryIcon item(ItemConvertible item) {
         return item.asItem() == Items.AIR ? empty() : stack(TlaStack.of(item));
-    }
-
-    /**
-     * Creates a new icon from the provided fluid variant.
-     */
-    static CategoryIcon fluid(FluidVariant fluid) {
-        return fluid.isBlank() ? empty() : stack(TlaStack.bucketOf(fluid));
     }
 
     /**

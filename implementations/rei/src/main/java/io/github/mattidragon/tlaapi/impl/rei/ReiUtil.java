@@ -6,7 +6,6 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import me.shedaniel.rei.api.common.entry.EntryIngredient;
 import me.shedaniel.rei.api.common.entry.EntryStack;
 import me.shedaniel.rei.api.common.util.EntryStacks;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.minecraft.item.ItemStack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,7 @@ public class ReiUtil {
     }
 
     public static TlaStack convertStack(FluidStack fluidStack) {
-        return TlaStack.of(FluidVariant.of(fluidStack.getFluid(), fluidStack.getPatch()), fluidStack.getAmount());
+        return TlaStack.of(fluidStack.getFluid(), fluidStack.getPatch(), fluidStack.getAmount());
     }
 
     public static TlaIngredient convertIngredient(EntryIngredient ingredient) {

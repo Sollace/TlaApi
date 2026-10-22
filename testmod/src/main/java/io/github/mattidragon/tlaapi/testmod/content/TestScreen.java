@@ -1,14 +1,14 @@
 package io.github.mattidragon.tlaapi.testmod.content;
 
-import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.Text;
 
 public class TestScreen extends HandledScreen<TestScreenHandler> {
-    public ItemVariant filterA = ItemVariant.of(Items.STONE);
+    public ItemStack filterA = Items.STONE.getDefaultStack();
 
     public TestScreen(TestScreenHandler handler, PlayerInventory playerInventory, Text title) {
         super(handler, playerInventory, title);
@@ -19,7 +19,7 @@ public class TestScreen extends HandledScreen<TestScreenHandler> {
         context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xffffffff);
         super.render(context, mouseX, mouseY, delta);
         context.fill(width / 2, height / 2, width / 2 + 18, height / 2 + 18, 0xffff0000);
-        context.drawItem(filterA.toStack(), width / 2, height / 2);
+        context.drawItem(filterA, width / 2, height / 2);
     }
 
     @Override

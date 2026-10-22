@@ -21,9 +21,9 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.constants.RecipeTypes;
-import mezz.jei.api.fabric.constants.FabricTypes;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.ISubtypeRegistration;
+import mezz.jei.common.platform.IPlatformFluidHelperInternal;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
@@ -68,9 +68,12 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     final Comparisons<Fluid> fluidComparisons = new Comparisons<>() {
         @Override
         public void register(Fluid fluid, TlaStackComparison comparison) {
-            subTypeProviders.add(registration -> registration.registerSubtypeInterpreter(FabricTypes.FLUID_STACK, fluid, (fluidVariant, context) -> {
-                return comparison.hashFunction().hash(TlaStack.bucketOf(fluidVariant.getFluidVariant())) + "";
-            }));
+            subTypeProviders.add(registration -> {
+                IPlatformFluidHelperInternal<Object> helpers = Untyped.cast(TlaApiJeiPlugin.JEI_HELPERS.getPlatformFluidHelper());
+                registration.registerSubtypeInterpreter(helpers.getFluidIngredientType(), fluid, (ingredient, context) -> {
+                    return comparison.hashFunction().hash(TlaStack.bucketOf(helpers.getFluidIngredientType().getBase(ingredient), helpers.getComponentsPatch(ingredient))) + "";
+                });
+            });
         }
 
         @Override

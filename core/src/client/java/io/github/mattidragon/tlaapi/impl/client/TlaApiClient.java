@@ -10,25 +10,23 @@ import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContext;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
 import io.github.mattidragon.tlaapi.api.client.plugin.TlaApiClientPlugin;
+import io.github.mattidragon.tlaapi.api.plugin.ModdingPlatform;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipeSerializer;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 
-public class TlaApiClient implements ClientModInitializer {
+public class TlaApiClient {
     private static final Map<TlaRecipeSerializer<?>, TlaRecipeGui<?>> GUIS = new HashMap<>();
     private static final TlaRecipeGui<?> EMPTY_GUI = (recipe, builder) -> {};
 
     public static void loadPlugins(ClientPluginContextBackend context) {
         GUIS.clear();
-        var entrypoints = FabricLoader.getInstance().getEntrypoints("tla-api-client", TlaApiClientPlugin.class);
+        var entrypoints = ModdingPlatform.getInstance().getEntrypoints("tla-api-client", TlaApiClientPlugin.class);
         var clientContext = new ClientPluginContext() {
             @Override
             public PluginContext getContext() {
@@ -72,10 +70,5 @@ public class TlaApiClient implements ClientModInitializer {
 
     public static <T extends TlaRecipe> TlaRecipeGui<T> getGui(T recipe) {
         return Untyped.cast(GUIS.getOrDefault(recipe.getSerializer(), EMPTY_GUI));
-    }
-
-    @Override
-    public void onInitializeClient() {
-        TlaApi.WORLD = () -> MinecraftClient.getInstance().world;
     }
 }

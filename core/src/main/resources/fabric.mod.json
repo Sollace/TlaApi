@@ -21,10 +21,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "io.github.mattidragon.tlaapi.impl.TlaApi"
+      "io.github.mattidragon.tlaapi.impl.fabric.FabricModdingPlatform"
     ],
     "client": [
-      "io.github.mattidragon.tlaapi.impl.client.TlaApiClient"
+      "io.github.mattidragon.tlaapi.impl.client.fabric.TlaApiClientFabric"
     ]
   },
   "depends": {

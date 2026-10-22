@@ -22,7 +22,7 @@ public class TestPluginClient implements TlaApiClientPlugin {
             var bounds = new TlaBounds(screen.width / 2, screen.height / 2, 18, 18);
             return List.of(new StackDragHandler.DropTarget(bounds, stack -> {
                 if (stack instanceof TlaStack.TlaItemStack itemStack) {
-                    screen.filterA = itemStack.getItemVariant();
+                    screen.filterA = itemStack.toStack();
                     return true;
                 }
                 return false;

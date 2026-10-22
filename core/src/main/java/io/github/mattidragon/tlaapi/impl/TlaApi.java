@@ -1,5 +1,6 @@
 package io.github.mattidragon.tlaapi.impl;
 
+import io.github.mattidragon.tlaapi.api.plugin.ModdingPlatform;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
@@ -7,9 +8,7 @@ import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.plugin.TlaApiPlugin;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader.BootstrapFunction;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
+
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
@@ -28,14 +27,15 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TlaApi implements ModInitializer {
+public class TlaApi {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA Api");
+    public static ModdingPlatform PLATFORM;
 
     public static final String DEFAULT_NAMESPACE = "tla-api";
 
     private static final Map<RecipeViewer, Bootsrap> VIEWER_REGISTRY = new HashMap<>();
 
-    private static final AtomicReference<MinecraftServer> SERVER = new AtomicReference<>(null);
+    public static final AtomicReference<MinecraftServer> SERVER = new AtomicReference<>(null);
     public static Supplier<World> WORLD = () -> Objects.requireNonNull(SERVER.get()).getOverworld();
 
     public static Identifier id(String path) {
@@ -60,7 +60,7 @@ public class TlaApi implements ModInitializer {
         var bootstrap = new Bootsrap(viewer, new HashMap<>(), new HashSet<>(), new AtomicReference<>(null));
         var context = implementation.bootstrap(bootstrap);
         bootstrap.pluginContext().set(context);
-        var entrypoints = FabricLoader.getInstance().getEntrypoints("tla-api", TlaApiPlugin.class);
+        var entrypoints = ModdingPlatform.getInstance().getEntrypoints("tla-api", TlaApiPlugin.class);
         LOGGER.info("Loading {} plugins for {}", entrypoints.size(), context);
         for (var entrypoint : entrypoints) {
              try {
@@ -75,11 +75,6 @@ public class TlaApi implements ModInitializer {
         }
 
         return context;
-    }
-
-    @Override
-    public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTED.register(SERVER::set);
     }
 
     private record Bootsrap(

@@ -3,16 +3,16 @@ package io.github.mattidragon.tlaapi.impl.jei;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.constants.ModIds;
 import mezz.jei.api.constants.VanillaTypes;
-import mezz.jei.api.fabric.constants.FabricTypes;
-import mezz.jei.api.fabric.ingredients.fluids.IJeiFluidIngredient;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.runtime.IIngredientManager;
+import mezz.jei.common.platform.IPlatformFluidHelperInternal;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.Identifier;
 
@@ -44,19 +44,26 @@ class JeiUtils {
                 .toList();
     }
 
-    public static TlaStack convertStack(ITypedIngredient<?> stack) {
+    public static TlaStack convertStack(IPlatformFluidHelper<?> helper, ITypedIngredient<?> stack) {
         if (stack.getType() == VanillaTypes.ITEM_STACK) {
             return TlaStack.of(((ItemStack) stack.getIngredient()));
-        } else if (stack.getType() == FabricTypes.FLUID_STACK) {
-            var ingredient = (IJeiFluidIngredient) stack.getIngredient();
-            return TlaStack.of(ingredient.getFluidVariant(), ingredient.getAmount());
+        } else if (stack.getType() == helper.getFluidIngredientType()) {
+            return convertFluid(Untyped.cast(stack), Untyped.cast(helper));
         } else {
             return TlaStack.empty();
         }
     }
 
-    public static TlaIngredient convertIngredient(List<ITypedIngredient<?>> stacks) {
-        return TlaIngredient.ofStacks(stacks.stream().map(JeiUtils::convertStack).toList());
+    private static <T> TlaStack convertFluid(ITypedIngredient<T> stack, IPlatformFluidHelperInternal<T> helper) {
+        return TlaStack.of(
+                helper.getFluidIngredientType().getBase(stack.getIngredient()),
+                helper.getComponentsPatch(stack.getIngredient()),
+                helper.getAmount(stack.getIngredient())
+        );
+    }
+
+    public static TlaIngredient convertIngredient(List<ITypedIngredient<?>> stacks, IPlatformFluidHelper<?> helpers) {
+        return TlaIngredient.ofStacks(stacks.stream().map(stack -> convertStack(helpers, stack)).toList());
     }
 
     public static IDrawable iconToDrawable(IJeiHelpers helpers, CategoryIcon icon) {
@@ -75,10 +82,9 @@ class JeiUtils {
     }
 
     private static <F> Optional<ITypedIngredient<F>> createFluidIngredient(IIngredientManager manager, IPlatformFluidHelper<F> helper, TlaStack.TlaFluidStack stack) {
-        var variant = stack.getFluidVariant();
         return manager.createTypedIngredient(
                 helper.getFluidIngredientType(),
-                helper.create(variant.getRegistryEntry(), stack.getAmount(), variant.getComponents()),
+                helper.create(stack.getRegistryEntry(), stack.getAmount(), stack.getComponents()),
                 false
         );
     }

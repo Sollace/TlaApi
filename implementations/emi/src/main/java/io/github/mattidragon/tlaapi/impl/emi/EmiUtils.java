@@ -7,8 +7,6 @@ import dev.emi.emi.api.stack.EmiStack;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
-import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 
@@ -20,7 +18,7 @@ class EmiUtils {
     public static EmiStack convertStack(TlaStack stack) {
         return (switch(stack) {
             case TlaStack.TlaEmptyStack empty -> EmiStack.EMPTY;
-            case TlaStack.TlaFluidStack fluidStack -> EmiStack.of(fluidStack.getFluid(), fluidStack.getFluidVariant().getComponents(), fluidStack.getAmount());
+            case TlaStack.TlaFluidStack fluidStack -> EmiStack.of(fluidStack.getFluid(), fluidStack.getComponents(), fluidStack.getAmount());
             case TlaStack.TlaItemStack itemStack -> EmiStack.of(itemStack.toStack(), itemStack.getAmount());
         }).setChance((float)stack.getChance().orElse(1D));
     }
@@ -41,8 +39,8 @@ class EmiUtils {
 
     public static TlaStack convertStack(EmiStack stack) {
         return (switch(stack.getKey()) {
-            case Fluid fluid -> TlaStack.of(FluidVariant.of(fluid, stack.getComponentChanges()), stack.getAmount());
-            case Item item -> TlaStack.of(ItemVariant.of(item, stack.getComponentChanges()), stack.getAmount()).withChance(stack.getChance());
+            case Fluid fluid -> TlaStack.of(fluid, stack.getComponentChanges(), stack.getAmount());
+            case Item item -> TlaStack.of(item, stack.getComponentChanges(), stack.getAmount()).withChance(stack.getChance());
             default -> TlaStack.empty();
         }).withChance(stack.getChance());
     }
