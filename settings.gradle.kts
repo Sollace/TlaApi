@@ -38,11 +38,10 @@ dependencyResolutionManagement {
 
         library("emi", "dev.emi:emi-fabric:${getProp("emi_version")}")
 
-        library("jei-api-fabric", "local.dir:jei-${getProp("jei_branch")}-fabric-api:${getProp("jei_version")}")
+        library("jei-api-fabric", "mezz.jei:jei-${getProp("jei_branch")}-fabric-api:${getProp("jei_version")}")
         library("jei-fabric", "mezz.jei:jei-${getProp("jei_branch")}-fabric:${getProp("jei_version")}")
-        
+
         library("eiv-fabric", "maven.modrinth:eiv:${getProp("eiv_version")}")
-        library("eiv-api-fabric", "local.dir:eiv-api:${getProp("eiv_version")}")
     }
 }
 

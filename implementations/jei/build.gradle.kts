@@ -20,5 +20,6 @@ dependencies {
         rootProject.libs.jei.fabric,
         ".*(/api/|DrawableAnimated|Internal).*"
     ))
+    //modCompileOnly(rootProject.libs.jei.api.fabric)
     modRuntimeOnly(rootProject.libs.jei.fabric)
 }

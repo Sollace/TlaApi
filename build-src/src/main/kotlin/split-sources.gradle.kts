@@ -6,28 +6,30 @@ loom {
     splitEnvironmentSourceSets()
 }
 
-// Ensure the client resources directory is created for projects with no client resources (required for classpath resolution)
+// Ensure the client resources and classes directory is created for projects even if they have nothing to put there
+//(required for classpath resolution)
 // Aka gradle is dumb.
-
-fun initClientResources() {
-    val resourceDir = File(project.layout.buildDirectory.getAsFile().get(), "resources/client")
-    if (!resourceDir.exists()) {
-        resourceDir.mkdirs()
-    }
+fun createRequiredResourceDirs() {
+    val buildDir = project.layout.buildDirectory.getAsFile().get()
+    val dirs = listOf(
+        File(buildDir, "resources/client"),
+        File(buildDir, "classes/java/client")
+    )
+    dirs.forEach { it.mkdirs() }
 }
 
 tasks.eclipse {
-    doLast {
-        initClientResources()
-    }
+    doLast { createRequiredResourceDirs() }
 }
 
 tasks.processResources  {
-    doLast {
-        initClientResources()
-    }
+    doLast { createRequiredResourceDirs() }
+}
+
+tasks.classes {
+    doLast { createRequiredResourceDirs() }
 }
 
 project.afterEvaluate {
-    initClientResources()
+    createRequiredResourceDirs()
 }
