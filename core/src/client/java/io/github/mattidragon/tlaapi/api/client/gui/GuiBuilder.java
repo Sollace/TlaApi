@@ -96,6 +96,7 @@ public interface GuiBuilder {
      * @see #addAnimatedArrow
      */
     WidgetConfig addArrow(int x, int y, boolean full);
+
     /**
      * Utility for adding an animated arrow texture to the GUI.
      * Should have dimensions of around 24x17, can vary by a few pixels.
@@ -111,7 +112,18 @@ public interface GuiBuilder {
      * @see #addTexture
      * @see #addAnimatedFlame
      */
-    WidgetConfig addFlame(int x, int y);
+    default WidgetConfig addFlame(int x, int y) {
+        return addFlame(x, y, true);
+    }
+
+    /**
+     * Utility for adding a flame texture to the GUI.
+     * Should have dimensions of around 14x14, can vary by a few pixels.
+     * @see #addTexture
+     * @see #addAnimatedFlame
+     */
+    WidgetConfig addFlame(int x, int y, boolean full);
+
     /**
      * Utility for adding an animated flame texture to the GUI.
      * Should have dimensions of around 14x14, can vary by a few pixels.

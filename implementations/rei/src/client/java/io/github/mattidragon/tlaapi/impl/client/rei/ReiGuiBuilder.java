@@ -86,8 +86,8 @@ class ReiGuiBuilder implements GuiBuilder {
     }
 
     @Override
-    public WidgetConfig addFlame(int x, int y) {
-        var widget = TlaWidgets.reiTexture(getPoint(x, y), 82, 77, 14, 14);
+    public WidgetConfig addFlame(int x, int y, boolean full) {
+        var widget = TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 1, full ? 77 : 74, 14, 14);
         widgets.add(widget);
         return new ReiWidgetConfig<>(widget);
     }

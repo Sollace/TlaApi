@@ -81,8 +81,8 @@ class EmiGuiBuilder implements GuiBuilder {
     }
 
     @Override
-    public WidgetConfig addFlame(int x, int y) {
-        var widget = widgetHolder.addTexture(EmiTexture.FULL_FLAME, x, y);
+    public WidgetConfig addFlame(int x, int y, boolean full) {
+        var widget = widgetHolder.addTexture(full ? EmiTexture.FULL_FLAME : EmiTexture.EMPTY_FLAME, x, y);
         return new EmiWidgetConfig<>(widget);
     }
 

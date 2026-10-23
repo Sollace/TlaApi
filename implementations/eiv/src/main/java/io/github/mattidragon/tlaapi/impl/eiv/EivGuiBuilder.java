@@ -144,13 +144,13 @@ class EivGuiBuilder implements GuiBuilder {
     }
 
     @Override
-    public WidgetConfig addFlame(int x, int y) {
-        return addTexture(EivUtil.EMPTY_FLAME, x, y);
+    public WidgetConfig addFlame(int x, int y, boolean full) {
+        return addTexture(full ? EivUtil.FULL_FLAME : EivUtil.EMPTY_FLAME, x, y);
     }
 
     @Override
     public WidgetConfig addAnimatedFlame(int x, int y, int duration) {
-        addFlame(x, y);
+        addFlame(x, y, false);
         return addAnimatedTexture(EivUtil.FULL_FLAME, x, y, duration, false, false, true);
     }
 

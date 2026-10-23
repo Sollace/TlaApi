@@ -181,9 +181,9 @@ class PreparedRecipe {
         }
 
         @Override
-        public WidgetConfig addFlame(int x, int y) {
+        public WidgetConfig addFlame(int x, int y, boolean full) {
             var helper = helpers.getGuiHelper();
-            var entry = new DrawableEntry(helper.getRecipeFlameFilled(), x, y);
+            var entry = new DrawableEntry(full ? helper.getRecipeFlameFilled() : helper.getRecipeFlameEmpty(), x, y);
             drawables.add(entry);
             return new WidgetBuilder(entry);
         }
