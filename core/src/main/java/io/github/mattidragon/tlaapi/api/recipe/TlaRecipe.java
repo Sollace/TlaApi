@@ -44,6 +44,10 @@ public interface TlaRecipe {
         return null;
     }
 
+    default StableRecipeIdentifier getStableId() {
+        return StableRecipeIdentifier.of(this);
+    }
+
     /**
      * Returns all the input ingredients of this recipe.
      */

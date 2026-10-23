@@ -2,6 +2,7 @@ package io.github.mattidragon.tlaapi.api.plugin;
 
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.annotation.SupportsExcept;
+import io.github.mattidragon.tlaapi.api.recipe.StableRecipeIdentifier;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
@@ -98,9 +99,24 @@ public interface PluginContext {
 
     /**
      * Adds a predicate to run on all current and future recipes to prevent certain ones with the given identifier from being added.
+     *
+     * @implNote The identifier can be the registry id of the recipe, or any other identifier.
+     *           What is used is not always going to be the same for every recipe mod.
+     *           It's sometimes better to match recipes on type, inputs, and outputs rather than relying on its ID.
+     *           StableRecipeIdentifier can be used to make this easier to do.
+     * @see StableRecipeIdentifier
      */
     default void removeRecipes(Identifier id) {
-        removeRecipes(r -> r.getId() != null && id.equals(r.getId().getValue()));
+        removeRecipes(r -> r.getStableId().equals(id));
+    }
+
+    /**
+     * Adds a predicate to run on all current and future recipes to prevent certain ones with the given identifier from being added.
+     *
+     * @see StableRecipeIdentifier
+     */
+    default void removeRecipes(StableRecipeIdentifier id) {
+        removeRecipes(r -> r.getStableId().equals(id));
     }
 
     /**
