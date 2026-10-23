@@ -7,7 +7,6 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.Untyped;
-import mezz.jei.api.constants.ModIds;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.helpers.IGuiHelper;
@@ -23,21 +22,11 @@ import mezz.jei.common.platform.IPlatformFluidHelperInternal;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.util.Identifier;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 class JeiUtils {
-    public static final Identifier ARROW_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/recipe_arrow.png");
-    public static final Identifier FILLED_ARROW_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/recipe_arrow_filled.png");
-
-    public static final Identifier FLAME_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/icons/flame_empty.png");
-    public static final Identifier FILLED_FLAME_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/icons/flame.png");
-
-    public static final Identifier OUTPUT_SLOT_TEXTURE = Identifier.of(ModIds.JEI_ID, "textures/jei/atlas/gui/output_slot.png");
-
     public static Optional<? extends ITypedIngredient<?>> convertStack(IJeiHelpers helpers, TlaStack stack) {
         return switch (stack) {
             case TlaStack.TlaEmptyStack empty -> Optional.empty();

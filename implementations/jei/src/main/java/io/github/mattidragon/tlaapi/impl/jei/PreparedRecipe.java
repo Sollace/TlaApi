@@ -61,7 +61,7 @@ class PreparedRecipe {
             var slot = builder.addSlot(slotBuilder.role, slotBuilder.getX(), slotBuilder.getY());
             if (slotBuilder.background) {
                 if (slotBuilder.large) {
-                    slot.setBackground(helpers.getGuiHelper().createDrawable(JeiUtils.OUTPUT_SLOT_TEXTURE, 0, 0, 26, 26), -5, -5);
+                    slot.setBackground(helpers.getGuiHelper().getOutputSlot(), -5, -5);
                 } else {
                     slot.setBackground(helpers.getGuiHelper().getSlotDrawable(), -1, -1);
                 }
@@ -165,8 +165,7 @@ class PreparedRecipe {
         @Override
         public WidgetConfig addArrow(int x, int y, boolean full) {
             var helper = helpers.getGuiHelper();
-            var drawable = helper.createDrawable(full ? JeiUtils.FILLED_ARROW_TEXTURE : JeiUtils.ARROW_TEXTURE, 0, 0, 24, 17);
-            var entry = new DrawableEntry(drawable, x, y);
+            var entry = new DrawableEntry(full ? helper.getRecipeArrowFilled() : helper.getRecipeArrow(), x, y);
             drawables.add(entry);
             return new WidgetBuilder(entry);
         }
@@ -174,8 +173,8 @@ class PreparedRecipe {
         @Override
         public WidgetConfig addAnimatedArrow(int x, int y, int duration) {
             var helper = helpers.getGuiHelper();
-            drawables.add(new DrawableEntry(helper.createDrawable(JeiUtils.FILLED_ARROW_TEXTURE, 0, 0, 24, 17), x, y));
-            var drawable = helper.createAnimatedDrawable(helper.createDrawable(JeiUtils.ARROW_TEXTURE, 0, 0, 24, 17), duration / 50, IDrawableAnimated.StartDirection.LEFT, false);
+            drawables.add(new DrawableEntry(helper.getRecipeArrow(), x, y));
+            var drawable = helper.createAnimatedDrawable(helper.getRecipeArrowFilled(), duration / 50, IDrawableAnimated.StartDirection.LEFT, false);
             var entry = new DrawableEntry(drawable, x, y);
             drawables.add(entry);
             return new WidgetBuilder(entry);
@@ -184,8 +183,7 @@ class PreparedRecipe {
         @Override
         public WidgetConfig addFlame(int x, int y) {
             var helper = helpers.getGuiHelper();
-            var drawable = helper.createDrawable(JeiUtils.FLAME_TEXTURE, 0, 0, 14, 14);
-            var entry = new DrawableEntry(drawable, x, y);
+            var entry = new DrawableEntry(helper.getRecipeFlameFilled(), x, y);
             drawables.add(entry);
             return new WidgetBuilder(entry);
         }
@@ -193,9 +191,8 @@ class PreparedRecipe {
         @Override
         public WidgetConfig addAnimatedFlame(int x, int y, int duration) {
             var helper = helpers.getGuiHelper();
-            drawables.add(new DrawableEntry(helper.createDrawable(JeiUtils.FILLED_FLAME_TEXTURE, 0, 0, 14, 14), x, y));
-            var drawable = helper.createAnimatedDrawable(helper.createDrawable(JeiUtils.FLAME_TEXTURE, 0, 0, 14, 14), duration / 50, IDrawableAnimated.StartDirection.TOP, true);
-            var entry = new DrawableEntry(drawable, x, y);
+            drawables.add(new DrawableEntry(helper.getRecipeFlameEmpty(), x, y));
+            var entry = new DrawableEntry(helper.createAnimatedDrawable(helper.getRecipeFlameFilled(), duration / 50, IDrawableAnimated.StartDirection.TOP, true), x, y);
             drawables.add(entry);
             return new WidgetBuilder(entry);
         }
