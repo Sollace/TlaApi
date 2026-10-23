@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
 import de.crafty.eiv.common.overlay.itemlist.view.ItemFilters;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.eiv.EivImplementation;
 import net.minecraft.item.ItemStack;
 
@@ -19,6 +20,6 @@ abstract class MixinItemFilters {
         if (EivImplementation.INSTANCE == null) {
             return stacks;
         }
-        return stacks.stream().filter(EivImplementation.INSTANCE.stackFilter).collect(Collectors.toList());
+        return stacks.stream().filter(stack -> !EivImplementation.INSTANCE.stackHideFilter.test(TlaStack.of(stack))).collect(Collectors.toList());
     }
 }

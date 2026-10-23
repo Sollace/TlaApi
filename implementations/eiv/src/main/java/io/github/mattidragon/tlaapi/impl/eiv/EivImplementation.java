@@ -36,6 +36,9 @@ import de.crafty.eiv.common.builtin.stonecutting.StonecutterViewType;
 import de.crafty.eiv.common.builtin.villager.VillagerViewType;
 import de.crafty.eiv.common.overlay.BlockingGuiComponent;
 import de.crafty.eiv.common.overlay.OverlayManager;
+import de.crafty.eiv.common.recipe.ItemViewRecipes;
+import de.crafty.eiv.common.recipe.ItemViewRecipes.ServerRecipeProvider;
+import de.crafty.eiv.common.recipe.inventory.SlotContent;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
@@ -47,6 +50,7 @@ import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
+import io.github.mattidragon.tlaapi.api.recipe.BasicTlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -59,7 +63,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
-import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
@@ -67,8 +70,6 @@ import net.minecraft.util.Identifier;
 
 public class EivImplementation implements PluginContext, ClientPluginContextBackend {
     public static EivImplementation INSTANCE;
-
-    private static boolean EVENTS_BOUNDS;
 
     private static final Identifier EXCLUSION_ZONE_ID = TlaApi.id("eiv_exlusion_zone");
     public static final Codec<IEivRecipeViewType> RECIPE_TYPE_CODEC = Identifier.CODEC.xmap(
@@ -120,25 +121,35 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
     private final List<ExclusionZone<?>> exclusionZones = new ArrayList<>();
     private Set<BlockingGuiComponent> activeBlockingGuiComponents = Set.of();
 
-    public Predicate<ItemStack> stackFilter = Predicates.alwaysTrue();
+    public Predicate<TlaStack> stackHideFilter = Predicates.alwaysFalse();
+    private Predicate<TlaRecipe> recipeHideFilter = Predicates.alwaysFalse();
 
     public EivImplementation(PluginLoader.BootstrapContext bootstrapContext) {
+        boolean firstRun = INSTANCE == null;
         INSTANCE = this;
         this.bootstrapContext = bootstrapContext;
         bootstrapContext.registerCategoryProvider(builtInCategories::get);
 
         addGenerator(this::provideTypedServerRecipes);
 
-        ItemView.addRecipeProvider(this::provideServerRecipes);
-        ItemView.addReloadCallback(this::onReload);
+        ItemView.addRecipeProvider((FilteredRecipeProvider)this::provideServerRecipes);
+        ItemView.addReloadCallback(EivImplementation::onReload);
         ItemView.registerRecipeWrapper(TlaEivRecipe.TYPE, TlaEivRecipe::getRecipeViews);
-        if (!EVENTS_BOUNDS) {
+        if (firstRun) {
             ModdingPlatform.getInstance().registerClientTickHandler(() -> INSTANCE.onClientTick());
         }
     }
 
-    private void onReload() {
+    private static void onReload() {
         // TODO: Register item sensitives/comparisons here
+        var providers = ItemViewRecipes.INSTANCE.getRecipeProviders();
+        for (var i = 0; i < providers.size(); i++) {
+            var provider = providers.get(i);
+            if (!(provider instanceof FilteredRecipeProvider)) {
+                // These exist outside of our lifetime, so accesses should go through the static instance in case of a reload
+                providers.set(i, new FilteredRecipeProvider.Impl(provider, recipe -> INSTANCE.shouldDisplayRecipe(recipe)));
+            }
+        }
     }
 
     private void onClientTick() {
@@ -195,6 +206,19 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
         }
 
         return lookupCategory(Objects.requireNonNull(bootstrapContext.lookupCategory(id)));
+    }
+
+    public TlaCategory lookupCategory(IEivRecipeViewType category) {
+        if (category instanceof TlaEivRecipeViewType builtIn) {
+            return builtIn.category;
+        }
+
+        BuiltInRecipeCategory vanillaType = VANILLA_CATEGORIES.get(category);
+        if (vanillaType != null) {
+            return getVanillaCategory(vanillaType).orElseThrow();
+        }
+
+        return new BuiltInCategory(BuiltInRecipeCategory.INFO, category);
     }
 
     public IEivRecipeViewType lookupCategory(TlaCategory category) {
@@ -262,6 +286,7 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
 
         serverRecipeGenerators.stream()
             .flatMap(generator -> generator.apply(manager))
+            .filter(recipe -> !recipeHideFilter.test(recipe))
             .map(recipe -> new TlaEivRecipe(recipe, lookupCategory(recipe.getCategory())))
             .forEach(output::add);
     }
@@ -273,12 +298,46 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
 
     @Override
     public void removeStacks(Predicate<TlaStack> predicate) {
-        stackFilter = stackFilter.and(stack -> !predicate.test(TlaStack.of(stack)));
+        stackHideFilter = stackHideFilter.or(predicate);
     }
 
     @Override
     public void removeRecipes(Predicate<TlaRecipe> predicate) {
-        // Not supported by EIV
+        recipeHideFilter = recipeHideFilter.or(predicate);
+    }
+
+    private boolean shouldDisplayRecipe(IEivServerRecipe recipe) {
+        if (recipe instanceof TlaEivRecipe i) {
+            return !recipeHideFilter.test(i.recipe);
+        }
+        var viewWrapper = ItemViewRecipes.INSTANCE.wrapperMap().get(recipe.getRecipeType());
+        if (viewWrapper == null) {
+            // This shouldn't really happen. Every recipe type has a view wrapper
+            return true;
+        }
+        // Possibly not the best idea, but EIV appears to be a client-only mod so I guess this is okay(for now?)
+        // Just don't try installing it on a dedicated server. It will probably explode.
+        return viewWrapper.wrap(Untyped.cast(recipe)).stream().noneMatch(view -> {
+            return recipeHideFilter.test(new BasicTlaRecipe(
+                    lookupCategory(view.getViewType()),
+                    null,
+                    () -> view.getIngredients().stream()
+                        .map(SlotContent::getValidContents)
+                        .map(stacks -> stacks.stream().map(TlaStack::of).toList())
+                        .map(TlaIngredient::ofStacks)
+                        .toList(),
+                    () -> view.getResults().stream()
+                        .flatMap(content -> content.getValidContents().stream())
+                        .distinct()
+                        .map(TlaStack::of)
+                        .toList(),
+                    () -> view.getViewType().getCraftReferences().stream()
+                        .distinct()
+                        .map(TlaStack::of)
+                        .map(TlaStack::asIngredient)
+                        .toList()
+            ));
+        });
     }
 
     @Override
@@ -299,6 +358,21 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
     @Override
     public String toString() {
         return "EIV plugin handler";
+    }
+
+    private interface FilteredRecipeProvider extends ServerRecipeProvider {
+        record Impl(ServerRecipeProvider provider, Predicate<IEivServerRecipe> filter) implements ServerRecipeProvider {
+            @Override
+            public void provide(List<IEivServerRecipe> output) {
+                List<IEivServerRecipe> recipes = new ArrayList<>();
+                provider.provide(recipes);
+                recipes.forEach(recipe -> {
+                    if (filter.test(recipe)) {
+                        output.add(recipe);
+                    }
+                });
+            }
+        }
     }
 
     private record ExclusionZone<T extends Screen>(Identifier id, Class<T> clazz, TlaBounds.Collection<T> bounds) {}

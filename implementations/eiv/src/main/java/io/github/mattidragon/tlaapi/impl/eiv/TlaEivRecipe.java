@@ -14,7 +14,7 @@ class TlaEivRecipe implements IEivServerRecipe {
     public static final EivRecipeType<TlaEivRecipe> TYPE = EivRecipeType.register(Identifier.of("tla", "recipe"), TlaEivRecipe::new);
 
     private IEivRecipeViewType viewType;
-    private TlaRecipe recipe;
+    TlaRecipe recipe;
 
     private TlaEivRecipe() {
         this(null, null);

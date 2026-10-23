@@ -94,13 +94,11 @@ public interface PluginContext {
     /**
      * Adds a predicate to run on all current and future recipes to prevent certain ones from being added.
      */
-    @SupportsExcept({ "eiv" })
     void removeRecipes(Predicate<TlaRecipe> predicate);
 
     /**
      * Adds a predicate to run on all current and future recipes to prevent certain ones with the given identifier from being added.
      */
-    @SupportsExcept({ "eiv" })
     default void removeRecipes(Identifier id) {
         removeRecipes(r -> r.getId() != null && id.equals(r.getId().getValue()));
     }
