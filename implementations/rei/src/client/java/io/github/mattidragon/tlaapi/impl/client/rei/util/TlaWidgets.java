@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.impl.client.rei.util;
 
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
+import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.rei.ReiUtil;
 import me.shedaniel.math.Dimension;
 import me.shedaniel.math.Point;
@@ -18,8 +19,8 @@ public class TlaWidgets {
         };
     }
 
-    public static AnimatedTextureWidget animatedFlame(int x, int y, int animationDurationMs) {
-        return new AnimatedTextureWidget.Builder(x, y, 14, 14)
+    public static AnimatedTextureWidget animatedFlame(Point point, int animationDurationMs) {
+        return new AnimatedTextureWidget.Builder(point.x, point.y, 14, 14)
                 .animationDuration(animationDurationMs)
                 .fullToEmpty()
                 .endToStart()
@@ -32,6 +33,13 @@ public class TlaWidgets {
         return new TextureWidget.Builder(new Rectangle(point, new Dimension(width, height)))
                 .defaultTexture()
                 .uv(u, v)
+                .build();
+    }
+
+    public static TextureWidget plusSign(Point point) {
+        return new TextureWidget.Builder(new Rectangle(point, new Dimension(13, 13)))
+                .texture(TlaApi.id("textures/gui/recipe_plus_sign.png"))
+                .textureSize(13, 13)
                 .build();
     }
 }

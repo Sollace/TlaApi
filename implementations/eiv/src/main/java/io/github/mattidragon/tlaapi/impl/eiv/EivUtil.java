@@ -19,6 +19,11 @@ class EivUtil {
     public static final TextureConfig FULL_ARROW = widgetSprite(14, 14, 14, 0);
     public static final TextureConfig EMPTY_FLAME = widgetSprite(24, 16, 0, 0);
     public static final TextureConfig FULL_FLAME = widgetSprite(24, 16, 0, 0);
+    public static final TextureConfig PLUS = TextureConfig.builder()
+            .texture(TlaApi.id("textures/gui/recipe_plus_sign.png"))
+            .size(13, 13)
+            .textureSize(13, 13)
+            .build();
 
     public static TextureConfig widgetSprite(int width, int height, int u, int v) {
         return TextureConfig.builder()

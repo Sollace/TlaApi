@@ -29,18 +29,17 @@ class EmiGuiBuilder implements GuiBuilder {
 
     @Override
     public WidgetConfig addTexture(TextureConfig config, int x, int y) {
-        var widget = widgetHolder.addTexture(config.lightTexture(),
+        return new EmiWidgetConfig<>(widgetHolder.addTexture(config.lightTexture(),
                 x, y,
                 config.width(), config.height(),
                 config.u(), config.v(),
                 config.regionWidth(), config.regionHeight(),
-                config.textureWidth(), config.textureHeight());
-        return new EmiWidgetConfig<>(widget);
+                config.textureWidth(), config.textureHeight()));
     }
 
     @Override
     public WidgetConfig addAnimatedTexture(TextureConfig config, int x, int y, int duration, boolean horizontal, boolean endToStart, boolean fullToEmpty) {
-        var widget = widgetHolder.addAnimatedTexture(config.lightTexture(),
+        return new EmiWidgetConfig<>(widgetHolder.addAnimatedTexture(config.lightTexture(),
                 x, y,
                 config.width(), config.height(),
                 config.u(), config.v(),
@@ -49,13 +48,12 @@ class EmiGuiBuilder implements GuiBuilder {
                 duration,
                 horizontal,
                 endToStart,
-                fullToEmpty);
-        return new EmiWidgetConfig<>(widget);
+                fullToEmpty));
     }
 
     @Override
     public WidgetConfig addProgressingTexture(TextureConfig config, int x, int y, DoubleSupplier progress, boolean horizontal, boolean endToStart, boolean fullToEmpty) {
-        var widget = widgetHolder.add(new ProgressingTextureWidget(config.lightTexture(),
+        return new EmiWidgetConfig<>(widgetHolder.add(new ProgressingTextureWidget(config.lightTexture(),
                 x, y,
                 config.width(), config.height(),
                 config.u(), config.v(),
@@ -64,45 +62,43 @@ class EmiGuiBuilder implements GuiBuilder {
                 progress,
                 horizontal,
                 endToStart,
-                fullToEmpty));
-        return new EmiWidgetConfig<>(widget);
+                fullToEmpty)));
     }
 
     @Override
     public WidgetConfig addArrow(int x, int y, boolean full) {
-        var widget = widgetHolder.addTexture(full ? EmiTexture.FULL_ARROW : EmiTexture.EMPTY_ARROW, x, y);
-        return new EmiWidgetConfig<>(widget);
+        return new EmiWidgetConfig<>(widgetHolder.addTexture(full ? EmiTexture.FULL_ARROW : EmiTexture.EMPTY_ARROW, x, y));
     }
 
     @Override
     public WidgetConfig addAnimatedArrow(int x, int y, int duration) {
-        var widget = widgetHolder.addFillingArrow(x, y, duration);
-        return new EmiWidgetConfig<>(widget);
+        return new EmiWidgetConfig<>(widgetHolder.addFillingArrow(x, y, duration));
     }
 
     @Override
     public WidgetConfig addFlame(int x, int y, boolean full) {
-        var widget = widgetHolder.addTexture(full ? EmiTexture.FULL_FLAME : EmiTexture.EMPTY_FLAME, x, y);
-        return new EmiWidgetConfig<>(widget);
+        return new EmiWidgetConfig<>(widgetHolder.addTexture(full ? EmiTexture.FULL_FLAME : EmiTexture.EMPTY_FLAME, x, y));
     }
 
     @Override
     public WidgetConfig addAnimatedFlame(int x, int y, int duration) {
         widgetHolder.addTexture(EmiTexture.EMPTY_FLAME, x, y);
-        widgetHolder.addAnimatedTexture(EmiTexture.FULL_FLAME, x, y, duration, false, true, true);
-        return null;
+        return new EmiWidgetConfig<>(widgetHolder.addAnimatedTexture(EmiTexture.FULL_FLAME, x, y, duration, false, true, true));
+    }
+
+    @Override
+    public WidgetConfig addPlusSign(int x, int y) {
+        return new EmiWidgetConfig<>(widgetHolder.addTexture(EmiTexture.PLUS, x, y));
     }
 
     @Override
     public TextConfig addText(Text text, int x, int y, int color, boolean shadow) {
-        var widget = widgetHolder.addText(text, x, y, color, shadow);
-        return new EmiTextConfig(widget);
+        return new EmiTextConfig(widgetHolder.addText(text, x, y, color, shadow));
     }
 
     @Override
     public WidgetConfig addCustomWidget(CustomTlaWidget widget) {
-        var emiWidget = widgetHolder.add(new EmiCustomWidget(widget));
-        return new EmiWidgetConfig<>(emiWidget);
+        return new EmiWidgetConfig<>(widgetHolder.add(new EmiCustomWidget(widget)));
     }
 
     @Override
@@ -115,10 +111,10 @@ class EmiGuiBuilder implements GuiBuilder {
         return new TlaBounds(0, 0, widgetHolder.getWidth(), widgetHolder.getHeight());
     }
 
-    private class EmiWidgetConfig<T extends EmiWidgetConfig<T>> implements WidgetConfig {
-        private final Widget widget;
+    private class EmiWidgetConfig<T extends EmiWidgetConfig<T, W>, W extends Widget> implements WidgetConfig {
+        protected final W widget;
 
-        private EmiWidgetConfig(Widget widget) {
+        private EmiWidgetConfig(W widget) {
             this.widget = widget;
         }
 
@@ -141,12 +137,9 @@ class EmiGuiBuilder implements GuiBuilder {
         }
     }
 
-    private class EmiTextConfig extends EmiWidgetConfig<EmiTextConfig> implements TextConfig {
-        private final TextWidget widget;
-
+    private class EmiTextConfig extends EmiWidgetConfig<EmiTextConfig, TextWidget> implements TextConfig {
         public EmiTextConfig(TextWidget widget) {
             super(widget);
-            this.widget = widget;
         }
 
         @Override
@@ -168,12 +161,9 @@ class EmiGuiBuilder implements GuiBuilder {
         }
     }
 
-    private class EmiSlotConfig extends EmiWidgetConfig<EmiSlotConfig> implements SlotConfig {
-        private final SlotWidget widget;
-
+    private class EmiSlotConfig extends EmiWidgetConfig<EmiSlotConfig, SlotWidget> implements SlotConfig {
         private EmiSlotConfig(SlotWidget widget) {
             super(widget);
-            this.widget = widget;
         }
 
         @Override

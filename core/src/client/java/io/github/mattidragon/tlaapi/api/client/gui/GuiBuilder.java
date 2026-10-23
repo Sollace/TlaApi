@@ -133,6 +133,14 @@ public interface GuiBuilder {
      */
     WidgetConfig addAnimatedFlame(int x, int y, int duration);
 
+
+    /**
+     * Utility for adding a plus sign texture to the GUI.
+     * Should have dimensions of around 14x14, can vary by a few pixels.
+     * @see #addTexture
+     */
+    WidgetConfig addPlusSign(int x, int y);
+
     /**
      * Adds a text to the GUI using the recipe viewer's default text color.
      * The text alignment can be tweaked in the returned config object.

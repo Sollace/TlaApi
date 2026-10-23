@@ -15,6 +15,7 @@ import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.common.gui.elements.DrawableAnimated;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -129,10 +130,7 @@ class PreparedRecipe {
                     case RIGHT -> IDrawableAnimated.StartDirection.LEFT;
                 };
             }
-            var drawable = helpers.getGuiHelper().createAnimatedDrawable(new TextureDrawable(config), duration / 50, direction, fullToEmpty);
-            var entry = new DrawableEntry(drawable, x, y);
-            drawables.add(entry);
-            return new WidgetBuilder(entry);
+            return addDrawable(helpers.getGuiHelper().createAnimatedDrawable(new TextureDrawable(config), duration / 50, direction, fullToEmpty), x, y);
         }
 
         @Override
@@ -140,9 +138,9 @@ class PreparedRecipe {
             var direction = horizontal
                     ? (endToStart ? IDrawableAnimated.StartDirection.RIGHT : IDrawableAnimated.StartDirection.LEFT)
                     : (endToStart ? IDrawableAnimated.StartDirection.BOTTOM : IDrawableAnimated.StartDirection.TOP);
-            var maxValue = horizontal ? config.width() : config.height();
             // This is technically not api, but I'm not reimplementing DrawableAnimated just to use a ITickTimer with a custom drawable
-            var drawable = new DrawableAnimated(new TextureDrawable(config), new ITickTimer() {
+            return addDrawable(new DrawableAnimated(new TextureDrawable(config), new ITickTimer() {
+                final int maxValue = horizontal ? config.width() : config.height();
                 @Override
                 public int getValue() {
                     if (fullToEmpty) {
@@ -156,43 +154,40 @@ class PreparedRecipe {
                 public int getMaxValue() {
                     return maxValue;
                 }
-            }, direction);
-            var entry = new DrawableEntry(drawable, x, y);
-            drawables.add(entry);
-            return new WidgetBuilder(entry);
+            }, direction), x, y);
         }
 
         @Override
         public WidgetConfig addArrow(int x, int y, boolean full) {
-            var helper = helpers.getGuiHelper();
-            var entry = new DrawableEntry(full ? helper.getRecipeArrowFilled() : helper.getRecipeArrow(), x, y);
-            drawables.add(entry);
-            return new WidgetBuilder(entry);
+            return addDrawable(full ? helpers.getGuiHelper().getRecipeArrowFilled() : helpers.getGuiHelper().getRecipeArrow(), x, y);
         }
 
         @Override
         public WidgetConfig addAnimatedArrow(int x, int y, int duration) {
             var helper = helpers.getGuiHelper();
             drawables.add(new DrawableEntry(helper.getRecipeArrow(), x, y));
-            var drawable = helper.createAnimatedDrawable(helper.getRecipeArrowFilled(), duration / 50, IDrawableAnimated.StartDirection.LEFT, false);
-            var entry = new DrawableEntry(drawable, x, y);
-            drawables.add(entry);
-            return new WidgetBuilder(entry);
+            return addDrawable(helper.createAnimatedDrawable(helper.getRecipeArrowFilled(), duration / 50, IDrawableAnimated.StartDirection.LEFT, false), x, y);
         }
 
         @Override
         public WidgetConfig addFlame(int x, int y, boolean full) {
-            var helper = helpers.getGuiHelper();
-            var entry = new DrawableEntry(full ? helper.getRecipeFlameFilled() : helper.getRecipeFlameEmpty(), x, y);
-            drawables.add(entry);
-            return new WidgetBuilder(entry);
+            return addDrawable(full ? helpers.getGuiHelper().getRecipeFlameFilled() : helpers.getGuiHelper().getRecipeFlameEmpty(), x, y);
         }
 
         @Override
         public WidgetConfig addAnimatedFlame(int x, int y, int duration) {
             var helper = helpers.getGuiHelper();
             drawables.add(new DrawableEntry(helper.getRecipeFlameEmpty(), x, y));
-            var entry = new DrawableEntry(helper.createAnimatedDrawable(helper.getRecipeFlameFilled(), duration / 50, IDrawableAnimated.StartDirection.TOP, true), x, y);
+            return addDrawable(helper.createAnimatedDrawable(helper.getRecipeFlameFilled(), duration / 50, IDrawableAnimated.StartDirection.TOP, true), x, y);
+        }
+
+        @Override
+        public WidgetConfig addPlusSign(int x, int y) {
+            return addDrawable(helpers.getGuiHelper().getRecipePlusSign(), x, y);
+        }
+
+        private WidgetConfig addDrawable(IDrawable drawable, int x, int y) {
+            var entry = new DrawableEntry(drawable, x, y);
             drawables.add(entry);
             return new WidgetBuilder(entry);
         }
@@ -208,7 +203,7 @@ class PreparedRecipe {
         @Override
         public WidgetConfig addCustomWidget(CustomTlaWidget widget) {
             var bounds = widget.getBounds();
-            IDrawable drawable = new IDrawable() {
+            return addDrawable(new IDrawable() {
                 @Override
                 public int getWidth() {
                     return bounds.width();
@@ -224,13 +219,13 @@ class PreparedRecipe {
                     var matrices = guiGraphics.getMatrices();
                     matrices.push();
                     matrices.translate(xOffset, yOffset, 0);
-                    widget.render(guiGraphics, 0, 0, 0);
+                    var client = MinecraftClient.getInstance();
+                    int mouseX = (int)client.mouse.getScaledX(client.getWindow());
+                    int mouseY = (int)client.mouse.getScaledY(client.getWindow());
+                    widget.render(guiGraphics, mouseX, mouseY, client.getRenderTickCounter().getTickProgress(false));
                     matrices.pop();
                 }
-            };
-            var entry = new DrawableEntry(drawable, bounds.x(), bounds.y());
-            drawables.add(entry);
-            return new WidgetBuilder(entry);
+            }, bounds.x(), bounds.y());
         }
 
         @Override

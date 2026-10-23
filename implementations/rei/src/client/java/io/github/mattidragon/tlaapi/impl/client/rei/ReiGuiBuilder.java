@@ -4,6 +4,7 @@ import io.github.mattidragon.tlaapi.api.client.gui.*;
 import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.impl.rei.ReiUtil;
+import io.github.mattidragon.tlaapi.impl.Untyped;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.AnimatedTextureWidget;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.ReiCustomWidget;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.TextureWidget;
@@ -17,6 +18,7 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
+import java.util.function.Function;
 
 class ReiGuiBuilder implements GuiBuilder {
     private final List<Widget> widgets = new ArrayList<>();
@@ -32,93 +34,78 @@ class ReiGuiBuilder implements GuiBuilder {
     public SlotConfig addSlot(TlaIngredient ingredient, int x, int y) {
         var widget = Widgets.createSlot(getPoint(x + 1, y + 1));
         widget.entries(ReiUtil.convertIngredient(ingredient));
-        widgets.add(widget);
-        return new ReiSlotConfig(widget);
+        return addWidget(widget, ReiSlotConfig::new);
     }
 
     @Override
     public WidgetConfig addTexture(TextureConfig config, int x, int y) {
-        var widget = new TextureWidget(x + bounds.x, y + bounds.y, config);
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+        return addWidget(new TextureWidget(x + bounds.x, y + bounds.y, config), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addAnimatedTexture(TextureConfig config, int x, int y, int duration, boolean horizontal, boolean endToStart, boolean fullToEmpty) {
-        var widget = new AnimatedTextureWidget.Builder(x + bounds.x, y + bounds.y, config.width(), config.height())
+        return addWidget(new AnimatedTextureWidget.Builder(x + bounds.x, y + bounds.y, config.width(), config.height())
                 .animationDuration(duration)
                 .texture(config.darkTexture(), config.lightTexture())
                 .flags(horizontal, endToStart, fullToEmpty)
                 .uv(config.u(), config.v())
                 .regionSize(config.regionWidth(), config.regionHeight())
                 .textureSize(config.textureWidth(), config.textureHeight())
-                .build();
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+                .build(), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addProgressingTexture(TextureConfig config, int x, int y, DoubleSupplier progress, boolean horizontal, boolean endToStart, boolean fullToEmpty) {
-        var widget = new AnimatedTextureWidget.Builder(x + bounds.x, y + bounds.y, config.width(), config.height())
+        return addWidget(new AnimatedTextureWidget.Builder(x + bounds.x, y + bounds.y, config.width(), config.height())
                 .progress(progress)
                 .texture(config.darkTexture(), config.lightTexture())
                 .flags(horizontal, endToStart, fullToEmpty)
                 .uv(config.u(), config.v())
                 .regionSize(config.regionWidth(), config.regionHeight())
                 .textureSize(config.textureWidth(), config.textureHeight())
-                .build();
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+                .build(), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addArrow(int x, int y, boolean full) {
-        var widget = TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 106, 91, 24, 17);
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+        return addWidget(TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 106, 91, 24, 17), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addAnimatedArrow(int x, int y, int duration) {
-        var widget = Widgets.createArrow(getPoint(x, y)).animationDurationMS(duration);
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+        return addWidget(Widgets.createArrow(getPoint(x, y)).animationDurationMS(duration), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addFlame(int x, int y, boolean full) {
-        var widget = TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 1, full ? 77 : 74, 14, 14);
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+        return addWidget(TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 1, full ? 77 : 74, 14, 14), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addAnimatedFlame(int x, int y, int duration) {
-        widgets.add(TlaWidgets.reiTexture(getPoint(x, y), 1, 74, 14, 14));
-        var widget = TlaWidgets.animatedFlame(x + bounds.x, y + bounds.y, 1000);
-        widgets.add(widget);
-        return new ReiWidgetConfig<>(widget);
+        var point = getPoint(x, y);
+        widgets.add(TlaWidgets.reiTexture(point, 1, 74, 14, 14));
+        return addWidget(TlaWidgets.animatedFlame(point, 1000), ReiWidgetConfig::new);
+    }
+
+    @Override
+    public WidgetConfig addPlusSign(int x, int y) {
+        return addWidget(TlaWidgets.plusSign(getPoint(x, y)), ReiWidgetConfig::new);
     }
 
     @Override
     public TextConfig addText(Text text, int x, int y, boolean shadow) {
-        var label = Widgets.createLabel(getPoint(x, y), text);
-        widgets.add(label.shadow(shadow));
-        return new ReiTextConfig(label);
+        return addWidget(Widgets.createLabel(getPoint(x, y), text).shadow(shadow), ReiTextConfig::new);
     }
 
     @Override
     public TextConfig addText(Text text, int x, int y, int color, boolean shadow) {
-        var label = Widgets.createLabel(getPoint(x, y), text);
-        widgets.add(label.shadow(shadow).color(color));
-        return new ReiTextConfig(label);
+        return addWidget(Widgets.createLabel(getPoint(x, y), text).shadow(shadow).color(color), ReiTextConfig::new);
     }
 
     @Override
     public WidgetConfig addCustomWidget(CustomTlaWidget widget) {
-        var reiWidget = new ReiCustomWidget(widget, bounds);
-        widgets.add(reiWidget);
-        return new ReiWidgetConfig<>(reiWidget);
+        return addWidget(new ReiCustomWidget(widget, bounds), ReiWidgetConfig::new);
     }
 
     @Override
@@ -126,9 +113,14 @@ class ReiGuiBuilder implements GuiBuilder {
         widgets.add(Widgets.createTooltip(new Rectangle(getPoint(x, y), new Dimension(width, height)), tooltip));
     }
 
+    private <T extends WidgetConfig, W extends WidgetWithBounds> T addWidget(W widget, Function<W, ? extends T> config) {
+        widgets.add(widget);
+        return config.apply(widget);
+    }
+
     @Override
     public TlaBounds getBounds() {
-        return new TlaBounds(0, 0, bounds.width, bounds.height);
+        return new TlaBounds(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 
     public List<Widget> getWidgets() {
@@ -139,10 +131,10 @@ class ReiGuiBuilder implements GuiBuilder {
         return new Point(bounds.x + x, bounds.y + y);
     }
 
-    private class ReiWidgetConfig<T extends ReiWidgetConfig<T>> implements WidgetConfig {
-        private final WidgetWithBounds widget;
+    private class ReiWidgetConfig<T extends ReiWidgetConfig<T, W>, W extends WidgetWithBounds> implements WidgetConfig {
+        protected W widget;
 
-        private ReiWidgetConfig(WidgetWithBounds widget) {
+        private ReiWidgetConfig(W widget) {
             this.widget = widget;
         }
 
@@ -158,52 +150,45 @@ class ReiGuiBuilder implements GuiBuilder {
             return new TlaBounds(reiBounds.x + bounds.x, reiBounds.y + bounds.y, reiBounds.width, reiBounds.height);
         }
 
-        @SuppressWarnings("unchecked")
         protected T getThis() {
-            return (T) this;
+            return Untyped.cast(this);
         }
     }
 
-    private class ReiTextConfig extends ReiWidgetConfig<ReiTextConfig> implements TextConfig {
-        private final Label label;
-
+    private class ReiTextConfig extends ReiWidgetConfig<ReiTextConfig, Label> implements TextConfig {
         private ReiTextConfig(Label label) {
             super(label);
-            this.label = label;
             alignLeft();
         }
 
         @Override
         public TextConfig alignLeft() {
-            label.leftAligned();
+            widget.leftAligned();
             return this;
         }
 
         @Override
         public TextConfig alignRight() {
-            label.rightAligned();
+            widget.rightAligned();
             return this;
         }
 
         @Override
         public TextConfig alignCenter() {
-            label.centered();
+            widget.centered();
             return this;
         }
 
         @Override
         public ReiTextConfig addTooltip(List<Text> tooltip) {
-            label.setTooltip(tooltip.toArray(Text[]::new));
+            widget.setTooltip(tooltip.toArray(Text[]::new));
             return this;
         }
     }
 
-    private class ReiSlotConfig extends ReiWidgetConfig<ReiSlotConfig> implements SlotConfig {
-        private final Slot widget;
-
+    private class ReiSlotConfig extends ReiWidgetConfig<ReiSlotConfig, Slot> implements SlotConfig {
         public ReiSlotConfig(Slot widget) {
             super(widget);
-            this.widget = widget;
         }
 
         @Override

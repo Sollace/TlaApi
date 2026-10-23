@@ -155,6 +155,11 @@ class EivGuiBuilder implements GuiBuilder {
     }
 
     @Override
+    public WidgetConfig addPlusSign(int x, int y) {
+        return addTexture(EivUtil.PLUS, x, y);
+    }
+
+    @Override
     public TextConfig addText(Text text, int x, int y, int color, boolean shadow) {
         var widget = new TextBuilder(text, x, y, color, shadow);
         elements.add(widget);
