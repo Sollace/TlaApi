@@ -31,7 +31,8 @@ public interface Comparisons<T> extends RecipeViewerOwned {
      * @param keys The keys for the object to compare.
      * @param comparison The comparison and hash function
      */
-    default void register(TlaStackComparison comparison, @SuppressWarnings("unchecked") T... keys) {
+    @SuppressWarnings("unchecked")
+    default void register(TlaStackComparison comparison, T... keys) {
         for (T key : keys) {
             register(key, comparison);
         }
