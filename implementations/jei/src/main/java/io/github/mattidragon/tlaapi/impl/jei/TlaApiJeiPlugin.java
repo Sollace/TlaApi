@@ -32,7 +32,7 @@ import java.util.stream.StreamSupport;
 
 @JeiPlugin
 public class TlaApiJeiPlugin implements IModPlugin {
-    private TlaApiJeiPluginContext context;
+    private final Untyped.Resettable<TlaApiJeiPluginContext> context = Untyped.memoize(TlaApiJeiPluginContext::new);
 
     static IJeiHelpers JEI_HELPERS;
 
@@ -42,10 +42,13 @@ public class TlaApiJeiPlugin implements IModPlugin {
     }
 
     @Override
+    public void onRuntimeUnavailable() {
+        context.reset();
+    }
+
+    @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
-        // This is the earliest event, and we don't get anything before that.
-        context = new TlaApiJeiPluginContext();
-        JEI_HELPERS = registration.getJeiHelpers();
+        var context = this.context.get();
         registration.addRecipeCategories(context.categories.stream()
                 .map(category -> context.preparedCategories.computeIfAbsent(category, c -> new TlaRecipeCategory(registration.getJeiHelpers(), c)))
                 .toArray(IRecipeCategory[]::new));
@@ -53,12 +56,12 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
     @Override
     public void registerItemSubtypes(ISubtypeRegistration registration) {
-        context.subTypeProviders.forEach(provider -> provider.accept(registration));
+        context.get().subTypeProviders.forEach(provider -> provider.accept(registration));
     }
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-        context.workstations.forEach((category, workstations) ->
+        context.get().workstations.forEach((category, workstations) ->
                 JeiUtils.convertIngredient(registration.getJeiHelpers(), workstations).forEach(workstation -> addCatalyst(registration, category, workstation)));
     }
 
@@ -70,12 +73,13 @@ public class TlaApiJeiPlugin implements IModPlugin {
         if (category instanceof TlaApiJeiPluginContext.BuiltInTlaCategory builtIn) {
             return Untyped.cast(builtIn.type());
         }
-        return Objects.requireNonNull(context.preparedCategories.get(category), "Category " + category.getId() + " must be registered").getRecipeType();
+        return Objects.requireNonNull(context.get().preparedCategories.get(category), "Category " + category.getId() + " must be registered").getRecipeType();
     }
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
         var jeiHelpers = registration.getJeiHelpers();
+        var context = this.context.get();
         RecipeManager recipeManager = context.bootstrapContext.getWorld() instanceof ServerWorld sw ? RecipeManager.of(sw.getRegistryManager(), sw.getRecipeManager()) : RecipeManager.of(
                 context.bootstrapContext.getWorld().getRegistryManager(),
                 () -> Internal.getClientSyncedRecipes().recipes().stream(),
@@ -94,6 +98,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        var context = this.context.get();
         var adders = new Object() {
             <T extends HandledScreen<?>> void addClickArea(TlaApiJeiPluginContext.ClickAreaTuple<T> tuple) {
                 registration.addGuiContainerHandler(tuple.clazz(), new IGuiContainerHandler<>() {
