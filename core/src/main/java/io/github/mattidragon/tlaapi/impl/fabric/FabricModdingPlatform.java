@@ -1,6 +1,7 @@
 package io.github.mattidragon.tlaapi.impl.fabric;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 import io.github.mattidragon.tlaapi.api.plugin.ModdingPlatform;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
@@ -10,6 +11,8 @@ import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.loader.api.FabricLoader;
 
 public class FabricModdingPlatform implements ModdingPlatform, ModInitializer {
+    public static Consumer<Runnable> CLIENT_TICK_HANDLERS = handler -> {};
+
     public FabricModdingPlatform() {
         // We set it before the actual initialise event so the value is available when needed
         TlaApi.PLATFORM = this;
@@ -33,5 +36,10 @@ public class FabricModdingPlatform implements ModdingPlatform, ModInitializer {
     @Override
     public long getBucketAmount() {
         return FluidConstants.BUCKET;
+    }
+
+    @Override
+    public void registerClientTickHandler(Runnable handler) {
+        CLIENT_TICK_HANDLERS.accept(handler);
     }
 }

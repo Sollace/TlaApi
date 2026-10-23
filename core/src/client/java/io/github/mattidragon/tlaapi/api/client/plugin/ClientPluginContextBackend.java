@@ -44,7 +44,9 @@ public interface ClientPluginContextBackend {
      * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
      */
     @SupportsExcept({ "eiv", "emi" })
-    <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> screenType, TlaCategory category, Function<T, TlaBounds> boundsFunction);
+    default <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> screenType, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
+        addClickArea(screenType, category, boundsFunction);
+    }
 
     /**
      * Adds a stack drag handler for a given screen type.
@@ -61,7 +63,6 @@ public interface ClientPluginContextBackend {
      * Usually calling this is unnecessary as the default implementations based on handled screens are sufficient.
      * @see #addExclusionZoneProvider
      */
-    @SupportsExcept({ "eiv" })
     default <T extends Screen> void addScreenSizeProvider(Class<T> clazz, Function<T, TlaBounds> provider) {
         addExclusionZoneProvider(clazz, screen -> List.of(provider.apply(screen)));
     }
@@ -70,6 +71,5 @@ public interface ClientPluginContextBackend {
      * Adds an exclusion zone provider for a given screen type.
      * This prevents recipe viewers from extending onto areas of the screen.
      */
-    @SupportsExcept({ "eiv" })
     <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider);
 }

@@ -31,7 +31,6 @@ import io.github.mattidragon.tlaapi.impl.Untyped;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.display.RecipeDisplay;
@@ -39,7 +38,6 @@ import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -232,11 +230,6 @@ public class TlaApiEmiPlugin implements EmiPlugin {
 
         @Override
         public <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> tTlaBoundsFunction) {
-            // Emi doesn't provide this feature
-        }
-
-        @Override
-        public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> tTlaBoundsFunction) {
             // Emi doesn't provide this feature
         }
 

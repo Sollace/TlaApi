@@ -10,6 +10,7 @@ import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.gui.handlers.IGuiProperties;
 import mezz.jei.api.helpers.IJeiHelpers;
+import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
@@ -17,7 +18,11 @@ import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
+import mezz.jei.api.registration.IRecipeTransferRegistration;
+import mezz.jei.api.registration.IRuntimeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
+import mezz.jei.api.runtime.IJeiRuntime;
+import mezz.jei.api.runtime.IIngredientManager.IIngredientListener;
 import mezz.jei.common.Internal;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
@@ -196,5 +201,41 @@ public class TlaApiJeiPlugin implements IModPlugin {
         context.ghostHandlers.forEach(adders::addGhostHandler);
         context.sizeProviders.forEach(adders::addSizeProvider);
         context.exclusionZoneProviders.forEach(adders::addExclusionZoneProvider);
+    }
+
+    @Override
+    public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
+        // TODO: Transfer handlers (control the transfer of items into the crafting ui)
+    }
+
+    @Override
+    public void onRuntimeAvailable(IJeiRuntime runtime) {
+        var manager = runtime.getIngredientManager();
+        manager.registerIngredientListener(new IIngredientListener() {
+            @Override
+            public <V> void onIngredientsAdded(IIngredientHelper<V> ingredientHelper, Collection<ITypedIngredient<V>> ingredients) {
+                var hidden = ingredients.stream().filter(ingredient -> {
+                    return !context.get().shouldDisplayIngredient(JeiUtils.convertStack(runtime.getJeiHelpers().getPlatformFluidHelper(), ingredient));
+                }).collect(Collectors.groupingBy(ITypedIngredient::getType, Collectors.mapping(ITypedIngredient::getIngredient, Collectors.toList())));
+                if (!hidden.isEmpty()) {
+                    hidden.forEach(manager::removeIngredientsAtRuntime);
+                }
+            }
+
+            @Override
+            public <V> void onIngredientsRemoved(IIngredientHelper<V> ingredientHelper, Collection<ITypedIngredient<V>> ingredients) {}
+        });
+    }
+
+    @Override
+    public void registerRuntime(IRuntimeRegistration registration) {
+        this.onRuntimeAvailable(null);
+        var recipeManager = registration.getRecipeManager();
+        var context = this.context.get();
+        recipeManager.createRecipeCategoryLookup().get().forEach(category -> {
+            recipeManager.hideRecipes(category.getRecipeType(), Untyped.cast(recipeManager.createRecipeLookup(category.getRecipeType())
+                    .get()
+                    .filter(recipe -> !context.shouldDisplayRecipe(context.convertRecipe(Untyped.cast(category), recipe, registration.getJeiHelpers().getPlatformFluidHelper(), recipeManager))).toList()));
+        });
     }
 }

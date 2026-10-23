@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import com.mojang.serialization.Codec;
 
 class TlaRecipeCategory implements IRecipeCategory<PreparedRecipe> {
-    private final TlaCategory category;
+    final TlaCategory category;
     private final IRecipeType<PreparedRecipe> type;
     private final IDrawable icon;
 

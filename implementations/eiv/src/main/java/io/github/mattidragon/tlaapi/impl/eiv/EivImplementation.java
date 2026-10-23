@@ -2,16 +2,20 @@ package io.github.mattidragon.tlaapi.impl.eiv;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.google.common.base.Predicates;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 
@@ -30,11 +34,14 @@ import de.crafty.eiv.common.builtin.smithing.SmithingViewType;
 import de.crafty.eiv.common.builtin.smoking.SmokingViewType;
 import de.crafty.eiv.common.builtin.stonecutting.StonecutterViewType;
 import de.crafty.eiv.common.builtin.villager.VillagerViewType;
+import de.crafty.eiv.common.overlay.BlockingGuiComponent;
+import de.crafty.eiv.common.overlay.OverlayManager;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
+import io.github.mattidragon.tlaapi.api.plugin.ModdingPlatform;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
@@ -46,20 +53,24 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.BuiltInCategoryRegistry;
+import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
+import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
-import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 
-class EivImplementation implements PluginContext, ClientPluginContextBackend {
+public class EivImplementation implements PluginContext, ClientPluginContextBackend {
     public static EivImplementation INSTANCE;
 
+    private static boolean EVENTS_BOUNDS;
+
+    private static final Identifier EXCLUSION_ZONE_ID = TlaApi.id("eiv_exlusion_zone");
     public static final Codec<IEivRecipeViewType> RECIPE_TYPE_CODEC = Identifier.CODEC.xmap(
             id -> INSTANCE.lookupCategory(id),
             IEivRecipeViewType::getId
@@ -106,6 +117,11 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
     private final List<Function<RecipeManager, Stream<TlaRecipe>>> serverRecipeGenerators = new ArrayList<>();
     private final List<Pair<Serializer<?>, Function<?, Stream<TlaRecipe>>>> typedServerRecipeGenerators = new ArrayList<>();
 
+    private final List<ExclusionZone<?>> exclusionZones = new ArrayList<>();
+    private Set<BlockingGuiComponent> activeBlockingGuiComponents = Set.of();
+
+    public Predicate<ItemStack> stackFilter = Predicates.alwaysTrue();
+
     public EivImplementation(PluginLoader.BootstrapContext bootstrapContext) {
         INSTANCE = this;
         this.bootstrapContext = bootstrapContext;
@@ -116,10 +132,35 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
         ItemView.addRecipeProvider(this::provideServerRecipes);
         ItemView.addReloadCallback(this::onReload);
         ItemView.registerRecipeWrapper(TlaEivRecipe.TYPE, TlaEivRecipe::getRecipeViews);
+        if (!EVENTS_BOUNDS) {
+            ModdingPlatform.getInstance().registerClientTickHandler(() -> INSTANCE.onClientTick());
+        }
     }
 
     private void onReload() {
         // TODO: Register item sensitives/comparisons here
+    }
+
+    private void onClientTick() {
+        MinecraftClient client = MinecraftClient.getInstance();
+        Set<TlaBounds> visited = new HashSet<>();
+        var blockingComponents = client.currentScreen == null || exclusionZones.isEmpty() ? Set.<BlockingGuiComponent>of() : exclusionZones.stream()
+                .filter(zone -> zone.clazz().isAssignableFrom(client.currentScreen.getClass()))
+                .flatMap(zone -> {
+                    var counter = new Object() { int index; };
+                    return zone.bounds().stream(Untyped.cast(client.currentScreen))
+                            .filter(visited::add) // the poor man's distinctBy()
+                            .map(bounds -> bounds.apply((x, y, width, height) -> new BlockingGuiComponent(zone.id().withSuffixedPath("/" + (counter.index++)), x, y, width, height)));
+                })
+                .collect(Collectors.toUnmodifiableSet());
+
+        if (!blockingComponents.equals(activeBlockingGuiComponents)) {
+            activeBlockingGuiComponents = blockingComponents;
+            // We handle the updating logic ourselves to avoid unnecessarily repainting EIV's overlays
+            OverlayManager.INSTANCE.removeGuiBlocking(id -> id.getNamespace().equals(TlaApi.DEFAULT_NAMESPACE), false);
+            OverlayManager.INSTANCE.allGuiBlockings().addAll(blockingComponents);
+            OverlayManager.INSTANCE.updateOverlaysAndWidgets();
+        }
     }
 
     @Override
@@ -133,18 +174,13 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
     }
 
     @Override
-    public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
-        // Not supported by EIV
-    }
-
-    @Override
     public <T extends Screen> void addStackDragHandler(Class<T> clazz, StackDragHandler<T> handler) {
         // Not supported by EIV
     }
 
     @Override
     public <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {
-        // Not supported by EIV
+        exclusionZones.add(new ExclusionZone<>(EXCLUSION_ZONE_ID.withSuffixedPath("/" + exclusionZones.size()), clazz, provider::apply));
     }
 
     public IEivRecipeViewType lookupCategory(Identifier id) {
@@ -237,7 +273,7 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
 
     @Override
     public void removeStacks(Predicate<TlaStack> predicate) {
-        // Not supported by EIV
+        stackFilter = stackFilter.and(stack -> !predicate.test(TlaStack.of(stack)));
     }
 
     @Override
@@ -260,6 +296,12 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
         return RecipeViewer.EIV;
     }
 
+    @Override
+    public String toString() {
+        return "EIV plugin handler";
+    }
+
+    private record ExclusionZone<T extends Screen>(Identifier id, Class<T> clazz, TlaBounds.Collection<T> bounds) {}
     private record BuiltInCategory(BuiltInRecipeCategory category, IEivRecipeViewType viewType) implements TlaCategory, RecipeViewerOwned {
         @Override
         public Identifier getId() {

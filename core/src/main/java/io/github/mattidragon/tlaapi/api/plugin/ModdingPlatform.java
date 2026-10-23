@@ -14,4 +14,6 @@ public interface ModdingPlatform {
     <T> List<T> getEntrypoints(String name, Class<T> type);
 
     long getBucketAmount();
+
+    void registerClientTickHandler(Runnable handler);
 }

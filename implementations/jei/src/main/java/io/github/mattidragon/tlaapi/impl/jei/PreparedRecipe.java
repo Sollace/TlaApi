@@ -48,6 +48,10 @@ class PreparedRecipe {
         return recipe.getId() == null ? null : recipe.getId().getValue();
     }
 
+    public TlaRecipe getRecipe() {
+        return recipe;
+    }
+
     public TlaCategory getCategory() {
         return recipe.getCategory();
     }

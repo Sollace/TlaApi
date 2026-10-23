@@ -1,5 +1,6 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
@@ -13,6 +14,7 @@ import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
+import io.github.mattidragon.tlaapi.api.recipe.BasicTlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -21,6 +23,10 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.helpers.IPlatformFluidHelper;
+import mezz.jei.api.recipe.IRecipeManager;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.common.platform.IPlatformFluidHelperInternal;
@@ -39,6 +45,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.jetbrains.annotations.Nullable;
+
 class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBackend {
     final Map<Identifier, BuiltInTlaCategory> builtInCategories = new HashMap<>();
     final List<TlaCategory> categories = new ArrayList<>();
@@ -50,6 +58,9 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     final List<ScreenSizeProvider<?>> sizeProviders = new ArrayList<>();
     final List<ExclusionZoneProvider<?>> exclusionZoneProviders = new ArrayList<>();
     final List<Consumer<ISubtypeRegistration>> subTypeProviders = new ArrayList<>();
+
+    private Predicate<TlaStack> stackHideFilter = Predicates.alwaysFalse();
+    private Predicate<TlaRecipe> recipeHideFilter = Predicates.alwaysFalse();
 
     final Map<TlaCategory, TlaRecipeCategory> preparedCategories = new HashMap<>();
 
@@ -93,6 +104,14 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         }));
     }
 
+    public boolean shouldDisplayRecipe(@Nullable TlaRecipe recipe) {
+        return recipe == null || !recipeHideFilter.test(recipe);
+    }
+
+    public boolean shouldDisplayIngredient(@Nullable TlaStack stack) {
+        return stack == null || stack.isEmpty() || !stackHideFilter.test(stack);
+    }
+
     @Override
     public PluginContext getContext() {
         return this;
@@ -105,6 +124,23 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         }
         categories.add(category);
         bootstrapContext.registerCategory(category);
+    }
+
+    public TlaCategory lookupCategory(IRecipeCategory<?> category) {
+        if (category instanceof TlaRecipeCategory c) {
+            return c.category;
+        }
+
+        var tlaCategory = bootstrapContext.lookupCategory(category.getRecipeType().getUid());
+
+        if (tlaCategory != null) {
+            return tlaCategory;
+        }
+
+        // TODO: Proper reverse lookup
+        return new BuiltInTlaCategory(BuiltInRecipeCategory.INFO,
+                category.getRecipeType(), category.getRecipeType().getUid(), BuiltInRecipeCategory.INFO.getSize()
+        );
     }
 
     @Override
@@ -163,12 +199,12 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
 
     @Override
     public void removeStacks(Predicate<TlaStack> predicate) {
-        // JEI doesn't support removing stacks
+        stackHideFilter = stackHideFilter.or(predicate);
     }
 
     @Override
     public void removeRecipes(Predicate<TlaRecipe> predicate) {
-        // JEI doesn't support removing recipes
+        recipeHideFilter = recipeHideFilter.or(predicate);
     }
 
     @Override
@@ -211,6 +247,24 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     @Override
     public RecipeViewer getActiveViewer() {
         return RecipeViewer.JEI;
+    }
+
+    @Nullable
+    public <T> TlaRecipe convertRecipe(IRecipeCategory<T> category, T recipe, IPlatformFluidHelper<?> helper, IRecipeManager recipeManager) {
+        return switch (recipe) {
+            case TlaRecipe t -> t;
+            case PreparedRecipe p -> p.getRecipe();
+            default -> reconstructExternalRecipe(category, recipe, helper, recipeManager);
+        };
+    }
+
+    private <T> TlaRecipe reconstructExternalRecipe(IRecipeCategory<T> category, T recipe, IPlatformFluidHelper<?> helper, IRecipeManager recipeManager) {
+        var ingredientSupplier = recipeManager.getRecipeIngredients(category, recipe);
+        return new BasicTlaRecipe(lookupCategory(category), null, () -> {
+            return ingredientSupplier.getIngredients(RecipeIngredientRole.INPUT).stream()
+                .map(input -> JeiUtils.convertStack(null, input).asIngredient())
+                .toList();
+        }, List::of, List::of);
     }
 
     record ClickAreaTuple<T extends HandledScreen<?>>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {}

@@ -82,13 +82,11 @@ public interface PluginContext {
     /**
      * Adds a predicate to run on all current and future TlaStacks to prevent certain ones from being added to the sidebar.
      */
-    @SupportsExcept({ "eiv", "jei" })
     void removeStacks(Predicate<TlaStack> predicate);
 
     /**
      * Adds a predicate to run on all current and future TlaStacks to prevent matching ones from being added to the sidebar.
      */
-    @SupportsExcept({ "eiv", "jei" })
     default void removeStacks(TlaStack stack) {
         removeStacks(s -> s.equals(stack));
     }
@@ -96,7 +94,7 @@ public interface PluginContext {
     /**
      * Adds a predicate to run on all current and future recipes to prevent certain ones from being added.
      */
-    @SupportsExcept({ "eiv", "jei" })
+    @SupportsExcept({ "eiv" })
     void removeRecipes(Predicate<TlaRecipe> predicate);
 
     /**

@@ -14,8 +14,9 @@ val fabricModJson = project.tasks.register<FabricModJsonTask>("fabricModJson") {
     displayname = "TLA-Api ${recipeModExtension.modid.get().uppercase()} Support Extension"
     modDescription = "Adds support for ${recipeModExtension.displayname.get()} using TLA API"
     entrypoints = recipeModExtension.entrypoints.get()
+    mixins.set(recipeModExtension.mixins)
     appendMode = false
-    
+
     description = "Create FMJ file for TLA Support Module"
 }
 

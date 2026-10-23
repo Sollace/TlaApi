@@ -239,6 +239,11 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
         public Either<Fluid, Item> getVariant() {
             return Either.right(Items.AIR);
         }
+
+        @Override
+        public String toString() {
+            return "TlaEmptyStack[]";
+        }
     }
 
     public static final class TlaFluidStack extends TlaStack {
@@ -284,8 +289,8 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
         public boolean equals(Object obj) {
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (TlaFluidStack) obj;
-            return Objects.equals(this.variant, that.variant)
+            return obj instanceof TlaFluidStack that
+                    && Objects.equals(this.variant, that.variant)
                     && Objects.equals(this.components, that.components)
                     && this.amount == that.amount
                     && Objects.equals(this.chance, that.chance);
@@ -352,8 +357,8 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
         public boolean equals(Object obj) {
             if (obj == this) return true;
             if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (TlaItemStack) obj;
-            return Objects.equals(this.variant, that.variant)
+            return obj instanceof TlaItemStack that
+                   && Objects.equals(this.variant, that.variant)
                    && Objects.equals(this.components, that.components)
                    && this.amount == that.amount
                    && Objects.equals(this.chance, that.chance);

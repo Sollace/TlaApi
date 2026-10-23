@@ -19,6 +19,7 @@ import org.gradle.api.tasks.TaskAction
 
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.MapProperty
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.file.RegularFileProperty
 
 abstract class FabricModJsonTask : DefaultTask() {
@@ -33,6 +34,9 @@ abstract class FabricModJsonTask : DefaultTask() {
 
     @get:Input
     abstract val modDescription: Property<String>
+
+    @get:Input
+    abstract val mixins : ListProperty<String>
 
     @get:Input
     abstract val entrypoints: MapProperty<String, String>
@@ -58,6 +62,11 @@ abstract class FabricModJsonTask : DefaultTask() {
                 json.addProperty("id", modid.get())
                 json.addProperty("name", displayname.get())
                 json.addProperty("description", modDescription.get())
+                if (mixins.isPresent()) {
+                    val mixinsJson = JsonArray()
+                    mixins.get().forEach { mixin -> mixinsJson.add("${mixin}.mixin.json") }
+                    json.add("mixins", mixinsJson)
+                }
 
                 val s = JsonWriter(writer)
                 s.setIndent("    ")
