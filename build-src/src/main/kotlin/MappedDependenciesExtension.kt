@@ -19,7 +19,7 @@ abstract class MappedDependenciesExtension(
             + dep.getName().replaceFirstChar{ it.titlecase() }
         ).replace("[\\./\\\\:<>\"\\?\\*\\|]".toRegex(), "_")
 
-        val provider = MappedDependencyProvider(mavenServer, dependency, pathFilter, "${project.rootDir}/lib")
+        val provider = MappedDependencyProvider(mavenServer, dependency, pathFilter, "${project.rootDir}/lib", false)
         val downloadTask = project.tasks.register("downloadFilteredDependency${depName}", DownloadFilteredDependencyTask::class.java) {
             outputFilesDir.set("${project.rootDir}/lib")
             this.mavenServer.set(mavenServer)
@@ -27,8 +27,8 @@ abstract class MappedDependenciesExtension(
             this.pathFilter.set(pathFilter)
             this.outputFiles.set(project.provider {
               project.files(listOf(
-                  this.getOutputFileLocation(dep, ""),
-                  this.getOutputFileLocation(dep, "-sources")
+                  provider.getOutputFileLocation(dep, ""),
+                  provider.getOutputFileLocation(dep, "-sources")
               ).filter{ it.exists() })
             })
             group = "TLA"

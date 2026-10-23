@@ -20,8 +20,9 @@ abstract class MappedDependencyExtension(
     operator fun invoke(mavenServer : String, dependency : Provider<MinimalExternalModuleDependency>, pathFilter : String) : Provider<ExternalModuleDependency> {
         return project.provider {
             val dep = dependency.get()
-            MappedDependencyProvider(mavenServer, dependency, pathFilter, "${project.rootDir}/lib").get()
-            project.getDependencyFactory().create("local.maven", "${dep.getName()}-api", dep.getVersion())
+            val provider = MappedDependencyProvider(mavenServer, dependency, pathFilter, "${project.rootDir}/lib", project.gradle.getStartParameter().isRefreshDependencies())
+            provider.get()
+            project.getDependencyFactory().create("local.maven", "${dep.getName()}-api", dep.getVersion()).setChanging(provider.binaryChanged)
         }
     }
 }

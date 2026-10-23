@@ -30,6 +30,9 @@ abstract class DownloadFilteredDependencyTask : DefaultTask() {
     abstract val dependency : Property<Provider<MinimalExternalModuleDependency>>
 
     @get:Input
+    abstract val force : Property<Boolean>
+
+    @get:Input
     abstract val pathFilter : Property<String>
 
     @get:Input
@@ -38,20 +41,8 @@ abstract class DownloadFilteredDependencyTask : DefaultTask() {
     @get:OutputFiles
     abstract val outputFiles: Property<FileCollection>
 
-    fun getJarUri(dep : MinimalExternalModuleDependency, classifier : String) : URI {
-        return URI.create("${mavenServer.get()}/${dep.getGroup().replace(".", "/")}/${dep.getName()}/${dep.getVersion()}/${dep.getName()}-${dep.getVersion()}${classifier}.jar")
-    }
-
-    fun getBaseName(dep : MinimalExternalModuleDependency, classifier : String) : String {
-        return "${dep.getName()}-api-${dep.getVersion()}${classifier}.jar"
-    }
-    
-    fun getOutputFileLocation(dep : MinimalExternalModuleDependency, classifier : String) : File {
-        return File("${outputFilesDir.get()}/${getBaseName(dep, classifier)}")
-    }
-
     @TaskAction
     fun action() {
-        MappedDependencyProvider(mavenServer.get(), dependency.get(), pathFilter.get(), outputFilesDir.get()).get()
+        MappedDependencyProvider(mavenServer.get(), dependency.get(), pathFilter.get(), outputFilesDir.get(), force.get()).get()
     }
 }

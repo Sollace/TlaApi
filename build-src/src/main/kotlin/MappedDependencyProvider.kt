@@ -17,7 +17,8 @@ data class MappedDependencyProvider(
     private val mavenServer : String,
     private val dependency : Provider<MinimalExternalModuleDependency>,
     private val pathFilter : String,
-    private val outputFilesDir : String
+    private val outputFilesDir : String,
+    private val force : Boolean
 ) {
     fun get() : List<File> {
         val outputs = mutableListOf<File>()
@@ -27,6 +28,8 @@ data class MappedDependencyProvider(
 
         return outputs
     }
+
+    var binaryChanged : Boolean = false
 
     fun getJarUri(dep : MinimalExternalModuleDependency, classifier : String) : URI {
         return URI.create("${mavenServer}/${dep.getGroup().replace(".", "/")}/${dep.getName()}/${dep.getVersion()}/${dep.getName()}-${dep.getVersion()}${classifier}.jar")
@@ -42,7 +45,11 @@ data class MappedDependencyProvider(
 
     protected fun downloadDep(dep : MinimalExternalModuleDependency, outputs : MutableList<File>) {
         val outputLocation = getOutputFileLocation(dep, "")
+        if (force && Files.exists(outputLocation.toPath())) {
+            Files.delete(outputLocation.toPath())
+        }
         if (!Files.exists(outputLocation.toPath())) {
+            binaryChanged = true
             attemptDepDownload(0, 3, dep, getJarUri(dep, ""), outputLocation)
         }
         outputs.add(outputLocation)
@@ -73,6 +80,9 @@ data class MappedDependencyProvider(
 
     protected fun downloadSource(dep : MinimalExternalModuleDependency, outputs : MutableList<File>) {
         val sourcesOutputLocation = getOutputFileLocation(dep, "-sources")
+        if (force && Files.exists(sourcesOutputLocation.toPath())) {
+            Files.delete(sourcesOutputLocation.toPath());
+        }
         if (!Files.exists(sourcesOutputLocation.toPath())) {
             System.out.println("Download dependency file: ${sourcesOutputLocation}")
             try {
@@ -81,6 +91,7 @@ data class MappedDependencyProvider(
                         inSourceStream.transferTo(outFileStream)
                     }
                 }
+                binaryChanged = true
                 outputs.add(sourcesOutputLocation)
             } catch (e : IOException) {
                 System.out.println(e)
