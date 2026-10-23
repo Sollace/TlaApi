@@ -45,7 +45,7 @@ import io.github.mattidragon.tlaapi.impl.Untyped;
  * Represents a stack of items or fluids for use with recipe viewers.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack, TlaStack.TlaEmptyStack {
+public sealed abstract class TlaStack implements Comparable<TlaStack>, TlaIngredient permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack, TlaStack.TlaEmptyStack {
     static <X, T extends TlaStack> MapCodec<T> createCodec(MapCodec<RegistryEntry<X>> variantCodec, Function4<RegistryEntry<X>, ComponentChanges, Long, OptionalDouble, T> constructor) {
         return RecordCodecBuilder.mapCodec(i -> i.group(
                 variantCodec.forGetter(o -> Untyped.cast(o.variant)),
@@ -209,6 +209,17 @@ public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.
         return List.of(this);
     }
 
+    @Override
+    public int compareTo(TlaStack o) {
+        int amountComparison = Long.compare(amount, o.amount);
+        if (amountComparison != 0) return amountComparison;
+        int idComparison = variant.getIdAsString().compareTo(o.getRegistryEntry().getIdAsString());
+        if (idComparison != 0) return idComparison;
+        int chanceComparison = Double.compare(chance.orElse(-1), o.chance.orElse(-1)) << 1;
+        if (chanceComparison != 0) return chanceComparison;
+        return Integer.compare(components.size(), o.components.size());
+    }
+
     public static final class TlaEmptyStack extends TlaStack {
         static final Type TYPE = new Type(MapCodec.unit(() -> TlaEmptyStack.INSTANCE), MoreCodecs.unit(() -> TlaEmptyStack.INSTANCE));
         static final TlaEmptyStack INSTANCE = new TlaEmptyStack();
@@ -246,6 +257,11 @@ public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.
         @Override
         public String toString() {
             return "TlaEmptyStack[]";
+        }
+
+        @Override
+        public int compareTo(TlaStack o) {
+            return o instanceof TlaEmptyStack ? 0 : super.compareTo(o);
         }
     }
 
