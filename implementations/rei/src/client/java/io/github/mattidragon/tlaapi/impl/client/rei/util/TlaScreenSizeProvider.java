@@ -9,19 +9,10 @@ import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 
 import java.util.function.Function;
 
-public class TlaScreenSizeProvider<T extends Screen> implements DisplayBoundsProvider<T> {
-    private final Class<T> clazz;
-    private final Function<T, TlaBounds> provider;
-
-    public TlaScreenSizeProvider(Class<T> clazz, Function<T, TlaBounds> provider) {
-        this.clazz = clazz;
-        this.provider = provider;
-    }
-
+public record TlaScreenSizeProvider<T extends Screen> (Class<T> clazz, Function<T, TlaBounds> provider) implements DisplayBoundsProvider<T> {
     @Override
     public @Nullable Rectangle getScreenBounds(T screen) {
-        var tlaBounds = provider.apply(screen);
-        return new Rectangle(tlaBounds.x(), tlaBounds.y(), tlaBounds.width(), tlaBounds.height());
+        return provider.apply(screen).apply(Rectangle::new);
     }
 
     @Override

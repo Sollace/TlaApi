@@ -5,24 +5,14 @@ import me.shedaniel.rei.api.client.registry.screen.ExclusionZonesProvider;
 import net.minecraft.client.gui.screen.Screen;
 
 import java.util.Collection;
-import java.util.function.Function;
-import java.util.stream.StreamSupport;
-
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 
-public class TlaExclusionZoneProvider<T extends Screen> implements ExclusionZonesProvider<T> {
-    public final Class<T> clazz;
-    private final Function<T, ? extends Iterable<TlaBounds>> provider;
-
-    public TlaExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {
-        this.clazz = clazz;
-        this.provider = provider;
-    }
-
+public record TlaExclusionZoneProvider<T extends Screen>(
+        Class<T> clazz,
+        TlaBounds.Collection<T> provider
+    ) implements ExclusionZonesProvider<T> {
     @Override
     public Collection<Rectangle> provide(T screen) {
-        return StreamSupport.stream(provider.apply(screen).spliterator(), false)
-                .map(tlaBounds -> new Rectangle(tlaBounds.x(), tlaBounds.y(), tlaBounds.width(), tlaBounds.height()))
-                .toList();
+        return provider.get(screen, Rectangle::new);
     }
 }

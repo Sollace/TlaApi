@@ -5,12 +5,16 @@ import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
+import io.github.mattidragon.tlaapi.impl.client.rei.util.ClickAreaTuple;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.TlaDragHandler;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.TlaExclusionZoneProvider;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.TlaScreenSizeProvider;
 import io.github.mattidragon.tlaapi.impl.rei.ReiImplementation;
+import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.screen.ScreenHandler;
+
 import java.util.*;
 import java.util.function.Function;
 
@@ -33,12 +37,12 @@ class ReiClientImplementation implements ClientPluginContextBackend {
 
     @Override
     public <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
-        clickAreas.add(new ClickAreaTuple<>(clazz, category, boundsFunction, false));
+        clickAreas.add(new ClickAreaTuple<>(clazz, category, boundsFunction, ScreenRegistry::registerClickArea));
     }
 
     @Override
-    public <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
-        clickAreas.add(new ClickAreaTuple<>(clazz, category, boundsFunction, true));
+    public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
+        clickAreas.add(new ClickAreaTuple<>(clazz, category, boundsFunction, ScreenRegistry::registerContainerClickArea));
     }
 
     @Override
@@ -53,13 +57,11 @@ class ReiClientImplementation implements ClientPluginContextBackend {
 
     @Override
     public <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {
-        exclusionZoneProviders.add(new TlaExclusionZoneProvider<>(clazz, provider));
+        exclusionZoneProviders.add(new TlaExclusionZoneProvider<>(clazz, provider::apply));
     }
 
     @Override
     public String toString() {
         return "REI plugin handler";
     }
-
-    public record ClickAreaTuple<T extends Screen>(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction, boolean handledScreenCoords) {}
 }

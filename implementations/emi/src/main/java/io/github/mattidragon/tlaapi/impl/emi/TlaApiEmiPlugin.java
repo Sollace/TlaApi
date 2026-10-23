@@ -39,6 +39,7 @@ import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
@@ -235,7 +236,7 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> tTlaBoundsFunction) {
+        public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> tTlaBoundsFunction) {
             // Emi doesn't provide this feature
         }
 

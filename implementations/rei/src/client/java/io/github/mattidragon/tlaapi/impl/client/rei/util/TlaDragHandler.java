@@ -11,15 +11,7 @@ import net.minecraft.client.gui.screen.Screen;
 
 import java.util.stream.Stream;
 
-public class TlaDragHandler<T extends Screen> implements DraggableStackVisitor<T> {
-    private final StackDragHandler<T> handler;
-    private final Class<T> clazz;
-
-    public TlaDragHandler(StackDragHandler<T> handler, Class<T> clazz) {
-        this.handler = handler;
-        this.clazz = clazz;
-    }
-
+public record TlaDragHandler<T extends Screen>(StackDragHandler<T> handler, Class<T> clazz) implements DraggableStackVisitor<T> {
     @Override
     public <R extends Screen> boolean isHandingScreen(R screen) {
         return clazz.isAssignableFrom(screen.getClass()) && handler.appliesTo(unsafeCast(screen));

@@ -164,8 +164,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
                                 .<Target<I>>map(target -> new Target<>() {
                                     @Override
                                     public Rect2i getArea() {
-                                        var bounds = target.bounds();
-                                        return new Rect2i(bounds.x(), bounds.y(), bounds.width(), bounds.height());
+                                        return target.bounds().apply(Rect2i::new);
                                     }
 
                                     @Override
@@ -187,7 +186,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
                     @Override
                     public List<Rect2i> getGuiExtraAreas(T containerScreen) {
                         return StreamSupport.stream(provider.provider().apply(containerScreen).spliterator(), false)
-                                .map(bounds -> new Rect2i(bounds.x(), bounds.y(), bounds.width(), bounds.height()))
+                                .map(bounds -> bounds.apply(Rect2i::new))
                                 .toList();
                     }
                 });

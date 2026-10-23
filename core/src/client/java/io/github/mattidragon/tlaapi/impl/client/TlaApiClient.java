@@ -19,6 +19,7 @@ import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.screen.ScreenHandler;
 
 public class TlaApiClient {
     private static final Map<TlaRecipeSerializer<?>, TlaRecipeGui<?>> GUIS = new HashMap<>();
@@ -44,7 +45,7 @@ public class TlaApiClient {
             }
 
             @Override
-            public <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
+            public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
                 context.addScreenHandlerClickArea(clazz, category, boundsFunction);
             }
 

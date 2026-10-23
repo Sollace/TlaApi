@@ -11,6 +11,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.screen.ScreenHandler;
 
 @ImplementationsExtend
 public interface ClientPluginContextBackend {
@@ -23,7 +24,7 @@ public interface ClientPluginContextBackend {
      * Adds an area which can be clicked to open a category if the recipe viewer supports it.
      * The bounds are based on screen coordinates. To use handled screen coordinates use {@link #addScreenHandlerClickArea}.
      * It should also be preferred whenever possible due to better compatibility.
-     * @param clazz The class of the screen for which this applies.
+     * @param screenType The class of the screen for which this applies.
      * @param category The category which should be opened.
      * @param boundsFunction The function that supplies the bounds.
      * @see #addScreenHandlerClickArea(Class, TlaCategory, Function)
@@ -31,19 +32,19 @@ public interface ClientPluginContextBackend {
      * <br>JEI doesn't provide the ability to add click areas to non-handled screens, as such this method won't work there.
      */
     @SupportsExcept({ "eiv", "emi", "jei" })
-    <T extends Screen> void addClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
+    <T extends Screen> void addClickArea(Class<T> screenType, TlaCategory category, Function<T, TlaBounds> boundsFunction);
 
     /**
      * Adds an area which can be clicked to open a category if the recipe viewer supports it.
      * The bounds are based on handled screen coordinates based on the reported screen size. For non-handled screens, see {@link #addClickArea}.
-     * @param clazz The class of the screen for which this applies.
+     * @param screenType The class of the screen for which this applies.
      * @param category The category which should be opened.
      * @param boundsFunction The function that supplies the bounds.
      * @see #addClickArea(Class, TlaCategory, Function)
      * @implNote EMI does not provide this functionality, as such this method is a no-op when running through it.
      */
     @SupportsExcept({ "eiv", "emi" })
-    <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction);
+    <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> screenType, TlaCategory category, Function<T, TlaBounds> boundsFunction);
 
     /**
      * Adds a stack drag handler for a given screen type.

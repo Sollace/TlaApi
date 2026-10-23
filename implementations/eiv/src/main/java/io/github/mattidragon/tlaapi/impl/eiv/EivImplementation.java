@@ -54,6 +54,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 
 class EivImplementation implements PluginContext, ClientPluginContextBackend {
@@ -132,7 +133,7 @@ class EivImplementation implements PluginContext, ClientPluginContextBackend {
     }
 
     @Override
-    public <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
+    public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
         // Not supported by EIV
     }
 

@@ -31,6 +31,7 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 import java.util.*;
 import java.util.function.Consumer;
@@ -176,7 +177,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     }
 
     @Override
-    public <T extends HandledScreen<?>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
+    public <C extends ScreenHandler, T extends HandledScreen<C>> void addScreenHandlerClickArea(Class<T> clazz, TlaCategory category, Function<T, TlaBounds> boundsFunction) {
         clickAreas.add(new ClickAreaTuple<>(clazz, category, boundsFunction));
     }
 
