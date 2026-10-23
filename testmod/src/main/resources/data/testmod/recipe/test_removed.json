@@ -1,0 +1,8 @@
+{
+  "type": "testmod:test_recipe",
+  "input": "minecraft:diamond",
+  "output": {
+    "id": "minecraft:diamond",
+    "count": 64
+  }
+}

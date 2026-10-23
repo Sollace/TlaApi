@@ -2,11 +2,15 @@ package io.github.mattidragon.tlaapi.testmod;
 
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.TlaApiPlugin;
+import io.github.mattidragon.tlaapi.api.recipe.StableRecipeIdentifier;
 import io.github.mattidragon.tlaapi.api.recipe.TlaRecipeSerializer;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.api.recipe.TlaStack.TlaItemStack;
 import io.github.mattidragon.tlaapi.testmod.content.TestMod;
 import net.minecraft.item.Items;
 import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.util.Identifier;
 
 import java.util.stream.Stream;
@@ -30,5 +34,17 @@ public class TestPlugin implements TlaApiPlugin {
         context.addWorkstation(TEST_CATEGORY, TlaStack.of(Items.DIRT).asIngredient());
         context.addRecipeGenerator(TestMod.RECIPE_DISPLAY_SERIALIZER, TestTlaRecipe::new);
         context.addGenerator(client -> Stream.of(new TestCustomRecipe(), new TestTextDisplay(), new ProgressBarTestRecipe()));
+
+        // Remove a vanilla recipe
+        context.removeRecipes(StableRecipeIdentifier.of(RegistryKey.of(RegistryKeys.RECIPE, Identifier.of("crafting_table"))));
+        // Remove a vanilla recipe (by result)
+        context.removeRecipes(recipe -> {
+            return recipe.getOutputs().stream().anyMatch(i -> i instanceof TlaItemStack stack && stack.getItem() == Items.TORCH);
+        });
+        // Remove custom recipe by id
+        context.removeRecipes(Identifier.of("testmod", "test_removed"));
+
+        // Remove stack
+        context.removeStacks(i -> i instanceof TlaItemStack stack && stack.getItem() == Items.BAT_SPAWN_EGG);
     }
 }
