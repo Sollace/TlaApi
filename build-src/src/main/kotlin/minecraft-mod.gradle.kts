@@ -10,6 +10,7 @@ if (project != rootProject) {
 group = rootProject.group
 
 val minecraftVersion = rootProject.property("minecraft_version") as String
+val minecraftVersionRange = rootProject.property("minecraft_version_range") as String
 val yarnMappings = rootProject.property("yarn_mappings") as String
 val loaderVersion = rootProject.property("loader_version") as String
 val fabricVersion = rootProject.property("fabric_version") as String
@@ -41,7 +42,7 @@ tasks.processResources  {
           "version" to project.version.toString(),
           "loader_version" to loaderVersion,
           "fabric_version" to fabricVersion,
-          "minecraft_version" to minecraftVersion
+          "minecraft_version" to minecraftVersionRange
         )
     }
 }
