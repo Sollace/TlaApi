@@ -22,10 +22,7 @@ data class MappedDependencyProvider(
 ) {
     fun get() : List<File> {
         val outputs = mutableListOf<File>()
-        val dep = dependency.get()
-        downloadDep(dep, outputs)
-        downloadSource(dep, outputs)
-
+        downloadDep(dependency.get(), outputs)
         return outputs
     }
 
@@ -43,6 +40,10 @@ data class MappedDependencyProvider(
         return File("${outputFilesDir}/${getBaseName(dep, classifier)}")
     }
 
+    fun getOutputs() : Provider<List<File>> {
+        return dependency.map{ listOf(getOutputFileLocation(it, ""), getOutputFileLocation(it, "-sources")) }
+    }
+
     protected fun downloadDep(dep : MinimalExternalModuleDependency, outputs : MutableList<File>) {
         val outputLocation = getOutputFileLocation(dep, "")
         if (force && Files.exists(outputLocation.toPath())) {
@@ -51,6 +52,7 @@ data class MappedDependencyProvider(
         if (!Files.exists(outputLocation.toPath())) {
             binaryChanged = true
             attemptDepDownload(0, 3, dep, getJarUri(dep, ""), outputLocation)
+            downloadSource(dep, outputs)
         }
         outputs.add(outputLocation)
     }
@@ -62,7 +64,7 @@ data class MappedDependencyProvider(
             uri : URI,
             outputLocation : File
         ) {
-        System.out.println("Download dependency file (attempt ${attempt}/${totalAttempts}: ${outputLocation}")
+        System.out.println(":download dependency file from ${dep} (attempt ${attempt}/${totalAttempts})")
         try {
             ZipInputStream(uri.toURL().openStream()).use { inZipStream ->
                 ZipOutputStream(Files.newOutputStream(outputLocation.toPath())).use { outZipStream ->
@@ -84,7 +86,7 @@ data class MappedDependencyProvider(
             Files.delete(sourcesOutputLocation.toPath());
         }
         if (!Files.exists(sourcesOutputLocation.toPath())) {
-            System.out.println("Download dependency file: ${sourcesOutputLocation}")
+            System.out.println(":download sources file from ${dep}")
             try {
                 getJarUri(dep, "-sources").toURL().openStream().use { inSourceStream ->
                     Files.newOutputStream(sourcesOutputLocation.toPath()).use { outFileStream ->

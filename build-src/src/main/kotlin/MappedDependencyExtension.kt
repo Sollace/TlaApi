@@ -18,10 +18,15 @@ abstract class MappedDependencyExtension(
     private val project : Project
 ) {
     operator fun invoke(mavenServer : String, dependency : Provider<MinimalExternalModuleDependency>, pathFilter : String) : Provider<ExternalModuleDependency> {
+        val provider = MappedDependencyProvider(mavenServer, dependency, pathFilter, "${project.rootDir}/lib", project.gradle.getStartParameter().isRefreshDependencies())
+        project.tasks.named("clean") {
+            doLast {
+                provider.getOutputs().get().forEach { it.delete() }
+            }
+        }
         return project.provider {
-            val dep = dependency.get()
-            val provider = MappedDependencyProvider(mavenServer, dependency, pathFilter, "${project.rootDir}/lib", project.gradle.getStartParameter().isRefreshDependencies())
             provider.get()
+            val dep = dependency.get()
             project.getDependencyFactory().create("local.maven", "${dep.getName()}-api", dep.getVersion()).setChanging(provider.binaryChanged)
         }
     }
