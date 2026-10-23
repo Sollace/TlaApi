@@ -15,57 +15,71 @@ import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.entry.RegistryEntryList;
 import net.minecraft.registry.tag.TagKey;
 import net.minecraft.util.context.ContextParameterMap;
+
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import com.mojang.serialization.Codec;
 
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.impl.util.Collections;
 
 /**
  * Represents a list of values that can be held by a single slot in a recipe.
  */
-public record TlaIngredient (Collection<? extends TlaStack> stacks) {
+public sealed interface TlaIngredient permits TlaIngredient.Many, TlaStack {
     /**
      * An empty ingredient, containing no stacks.
      */
-    public static final TlaIngredient EMPTY = new TlaIngredient(List.of());
+    TlaIngredient EMPTY = new Many(List.of());
 
-    public static final Codec<TlaIngredient> CODEC = TlaStack.CODEC.listOf().xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
-    public static final PacketCodec<RegistryByteBuf, TlaIngredient> PACKET_CODEC = TlaStack.PACKET_CODEC.collect(PacketCodecs.toList()).xmap(TlaIngredient::new, i -> List.copyOf(i.stacks));
+    Codec<TlaIngredient> CODEC = TlaStack.CODEC.listOf().xmap(TlaIngredient::ofStacks, i -> List.copyOf(i.stacks()));
+    PacketCodec<RegistryByteBuf, TlaIngredient> PACKET_CODEC = TlaStack.PACKET_CODEC.collect(PacketCodecs.toList()).xmap(TlaIngredient::ofStacks, i -> List.copyOf(i.stacks()));
 
-    public TlaIngredient {
-        stacks = List.copyOf(stacks);
+    Collection<? extends TlaStack> stacks();
+
+    default Optional<TagKey<?>> tag() {
+        return Optional.empty();
     }
 
     /**
      * Creates a new ingredient from the provided stacks.
      */
-    public static TlaIngredient ofStacks(Collection<? extends TlaStack> stacks) {
-        return stacks.isEmpty() ? EMPTY : new TlaIngredient(stacks);
+    static TlaIngredient ofStacks(Stream<? extends TlaStack> stacks) {
+        return Collections.reduce(stacks.filter(i -> !i.isEmpty()).toList(), EMPTY, Function.identity(), s -> new Many(s.toList()));
     }
 
     /**
      * Creates a new ingredient from the provided stacks.
      */
-    public static TlaIngredient ofStacks(TlaStack... stacks) {
-        return new TlaIngredient(List.of(stacks));
+    static TlaIngredient ofStacks(Collection<? extends TlaStack> stacks) {
+        return ofStacks(stacks.stream());
+    }
+
+    /**
+     * Creates a new ingredient from the provided stacks.
+     */
+    static TlaIngredient ofStacks(TlaStack... stacks) {
+        return ofStacks(Arrays.stream(stacks));
     }
 
     /**
      * Creates a new ingredient from the provided vanilla ingredient.
      */
     @SuppressWarnings("deprecation")
-    public static TlaIngredient ofIngredient(Ingredient ingredient) {
-        return ingredient.isEmpty() ? EMPTY : ofStacks(ingredient.getMatchingItems().<TlaStack>map(TlaStack::of).filter(i -> !i.isEmpty()).toList());
+    static TlaIngredient ofIngredient(Ingredient ingredient) {
+        return ingredient.isEmpty() ? EMPTY : ofStacks(ingredient.getMatchingItems().map(TlaStack::of).filter(i -> !i.isEmpty()).toList());
     }
 
     /**
      * Creates a new ingredient from the provided vanilla ingredient.
      */
-    public static TlaIngredient ofSlotDisplay(SlotDisplay display) {
+    static TlaIngredient ofSlotDisplay(SlotDisplay display) {
         if (display instanceof EmptySlotDisplay) {
             return EMPTY;
         }
@@ -76,69 +90,97 @@ public record TlaIngredient (Collection<? extends TlaStack> stacks) {
     /**
      * Creates a new ingredient from the provided items.
      */
-    public static TlaIngredient ofItems(Collection<? extends ItemConvertible> items) {
-        return items.isEmpty() ? EMPTY : ofStacks(items.stream().map(TlaStack::of).filter(i -> !i.isEmpty()).toList());
+    static TlaIngredient ofItems(Collection<? extends ItemConvertible> items) {
+        return ofItems(items.stream());
+    }
+
+    /**
+     * Creates a new ingredient from the provided items.
+     */
+    static TlaIngredient ofItems(Stream<? extends ItemConvertible> items) {
+        return ofStacks(items.map(TlaStack::of));
     }
 
     /**
      * Creates a new ingredient from the provided item tag.
      * Note that any tags used here or in recipes should be translated so that they appear nicely in EMI.
      */
-    public static TlaIngredient ofItemTag(TagKey<Item> tag) {
-        return ofItems(Registries.ITEM.getOptional(tag)
+    static TlaIngredient ofItemTag(TagKey<Item> tag) {
+        return ofStacks(Registries.ITEM.getOptional(tag)
                 .map(RegistryEntryList.Named::stream)
                 .orElse(Stream.empty())
                 .map(RegistryEntry::value)
-                .toList());
+                .map(TlaStack::of));
     }
 
     /**
      * Creates a new ingredient from the provided fluids.
      */
-    public static TlaIngredient ofFluids(Collection<? extends Fluid> fluids) {
-        return fluids.isEmpty() ? EMPTY : ofStacks(fluids.stream().map(TlaStack::bucketOf).filter(i -> !i.isEmpty()).toList());
+    static TlaIngredient ofFluids(Collection<? extends Fluid> fluids) {
+        return ofFluids(fluids.stream());
+    }
+
+    /**
+     * Creates a new ingredient from the provided fluids.
+     */
+    static TlaIngredient ofFluids(Stream<? extends Fluid> fluids) {
+        return ofStacks(fluids.map(TlaStack::bucketOf));
     }
 
     /**
      * Creates a new ingredient from the provided fluid tag.
      * Note that any tags used here or in recipes should be translated so that they appear nicely in EMI.
      */
-    public static TlaIngredient ofFluidTag(TagKey<Fluid> tag) {
-        return ofFluids(Registries.FLUID.getOptional(tag)
+    static TlaIngredient ofFluidTag(TagKey<Fluid> tag) {
+        return ofStacks(Registries.FLUID.getOptional(tag)
                 .map(RegistryEntryList.Named::stream)
                 .orElse(Stream.empty())
                 .map(RegistryEntry::value)
-                .toList());
+                .map(TlaStack::bucketOf));
     }
 
     /**
      * Combines multiple ingredients into a single ingredient.
      * Does not play well with EMIs tag names so should be avoided if possible.
      */
-    public static TlaIngredient join(TlaIngredient... ingredients) {
-        return join(List.of(ingredients));
+    static TlaIngredient join(TlaIngredient... ingredients) {
+        return join(Stream.of(ingredients));
     }
 
     /**
      * Combines multiple ingredients into a single ingredient.
      * Does not play well with EMIs tag names so should be avoided if possible.
      */
-    public static TlaIngredient join(Collection<? extends TlaIngredient> ingredients) {
-        return new TlaIngredient(ingredients.stream().flatMap(ingredient -> ingredient.stacks().stream()).toList());
+    static TlaIngredient join(Collection<? extends TlaIngredient> ingredients) {
+        return join(ingredients.stream());
+    }
+
+    /**
+     * Combines multiple ingredients into a single ingredient.
+     * Does not play well with EMIs tag names so should be avoided if possible.
+     */
+    static TlaIngredient join(Stream<? extends TlaIngredient> ingredients) {
+        return ofStacks(ingredients.flatMap(ingredient -> ingredient.stacks().stream()));
     }
 
     /**
      * Create a new ingredient where every stack has the provided count.
      * Note that this applies equally to fluids and items.
      */
-    public TlaIngredient withAmount(long amount) {
-        return new TlaIngredient(stacks.stream().map(stack -> stack.withAmount(amount)).toList());
+    default TlaIngredient withAmount(long amount) {
+        return ofStacks(stacks().stream().map(stack -> stack.withAmount(amount)));
     }
 
     /**
      * Create a new ingredient where every stack has the provided chance.
      */
-    public TlaIngredient withChance(double chance) {
-        return new TlaIngredient(stacks.stream().map(stack -> stack.withChance(chance)).toList());
+    default TlaIngredient withChance(double chance) {
+        return ofStacks(stacks().stream().map(stack -> stack.withChance(chance)));
+    }
+
+    public record Many(Collection<? extends TlaStack> stacks) implements TlaIngredient {
+        public Many {
+            stacks = List.copyOf(stacks);
+        }
     }
 }

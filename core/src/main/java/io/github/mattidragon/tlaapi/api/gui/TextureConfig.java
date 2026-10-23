@@ -194,5 +194,40 @@ public record TextureConfig (
             return new TextureConfig(lightTexture, darkTexture, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
         }
     }
+
+    public <T> T apply(RemappingFunction<T> remappingFunction) {
+        return remappingFunction.apply(lightTexture, darkTexture, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
+    }
+
+    public interface RemappingFunction<T> {
+        T apply(
+            Identifier lightTexture, Identifier darkTexture,
+            int width, int height,
+            int u, int v,
+            int regionWidth, int regionHeight,
+            int textureWidth, int textureHeight
+        );
+    }
+
+    public interface UnitRemappingFunction<T> extends RemappingFunction<T> {
+        T apply(
+            Identifier lightTexture,
+            int width, int height,
+            int u, int v,
+            int regionWidth, int regionHeight,
+            int textureWidth, int textureHeight
+        );
+
+        @Override
+        default T apply(
+                Identifier lightTexture, Identifier darkTexture,
+                int width, int height,
+                int u, int v,
+                int regionWidth, int regionHeight,
+                int textureWidth, int textureHeight
+            ) {
+            return apply(lightTexture, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
+        }
+    }
 }
 

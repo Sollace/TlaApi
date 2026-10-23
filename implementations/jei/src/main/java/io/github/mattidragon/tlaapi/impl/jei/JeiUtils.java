@@ -59,7 +59,8 @@ class JeiUtils {
     }
 
     public static <T> Stream<TlaStack> getIngredients(IPlatformFluidHelper<?> helper, IIngredientSupplier ingredientSupplier, RecipeIngredientRole role) {
-        return ingredientSupplier.getIngredients(role).stream()
+        return ingredientSupplier.getIngredients(role)
+                .stream()
                 .map(input -> JeiUtils.convertStack(helper, input));
     }
 
@@ -91,7 +92,7 @@ class JeiUtils {
     }
 
     public static TlaIngredient convertIngredient(List<ITypedIngredient<?>> stacks, IPlatformFluidHelper<?> helpers) {
-        return TlaIngredient.ofStacks(stacks.stream().map(stack -> convertStack(helpers, stack)).toList());
+        return TlaIngredient.ofStacks(stacks.stream().map(stack -> convertStack(helpers, stack)));
     }
 
     public static IDrawable iconToDrawable(IJeiHelpers helpers, CategoryIcon icon) {

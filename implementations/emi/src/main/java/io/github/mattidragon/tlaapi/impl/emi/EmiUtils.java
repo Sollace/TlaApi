@@ -4,13 +4,13 @@ import dev.emi.emi.api.render.EmiRenderable;
 import dev.emi.emi.api.render.EmiTexture;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
+import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.impl.util.Collections;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
-
-import java.util.OptionalDouble;
 
 class EmiUtils {
     private static final EmiRenderable EMPTY_RENDERABLE = (draw, x, y, delta) -> {};
@@ -24,17 +24,14 @@ class EmiUtils {
     }
 
     public static EmiIngredient convertIngredient(TlaIngredient ingredient) {
-        var stacks = ingredient.stacks();
-        return switch (stacks.size()) {
-            case 0 -> EmiStack.EMPTY;
-            case 1 -> convertStack(stacks.iterator().next());
-            default ->
-                // Emi ingredients store the chance in the ingredient itself, not in the stacks
-                // We calculate the average chance of all stacks and set it in the ingredient
-                // As emi doesn't differentiate between 100% and a lack of chance, we set it to 1 if there is no chance
-                EmiIngredient.of(stacks.stream().map(EmiUtils::convertStack).toList())
-                    .setChance((float) stacks.stream().map(TlaStack::getChance).flatMapToDouble(OptionalDouble::stream).average().orElse(1));
-        };
+        return Collections.reduce(ingredient.stacks(), EmiStack.EMPTY, EmiUtils::convertStack, stacks -> {
+            // Emi ingredients store the chance in the ingredient itself, not in the stacks
+            // We calculate the average chance of all stacks and set it in the ingredient
+            // As emi doesn't differentiate between 100% and a lack of chance, we set it to 1 if there is no chance
+            var list = stacks.toList();
+            float chance = (float) list.stream().mapToDouble(EmiStack::getChance).average().orElse(1);
+            return EmiIngredient.of(list).setChance(chance);
+        });
     }
 
     public static TlaStack convertStack(EmiStack stack) {
@@ -49,17 +46,13 @@ class EmiUtils {
         if (stack instanceof EmiStack emiStack) {
             return TlaIngredient.ofStacks(convertStack(emiStack));
         }
-        return TlaIngredient.ofStacks(stack.getEmiStacks().stream().map(EmiUtils::convertStack).toList());
+        return TlaIngredient.ofStacks(stack.getEmiStacks().stream().map(EmiUtils::convertStack));
     }
 
     public static EmiRenderable iconToRenderable(CategoryIcon icon) {
         return switch (icon) {
             case CategoryIcon.StackIcon stackIcon -> convertStack(stackIcon.stack());
-            case CategoryIcon.TextureIcon textureIcon -> new EmiTexture(textureIcon.texture().lightTexture(),
-                    textureIcon.texture().u(), textureIcon.texture().v(),
-                    textureIcon.texture().width(), textureIcon.texture().height(),
-                    textureIcon.texture().regionWidth(), textureIcon.texture().regionHeight(),
-                    textureIcon.texture().textureWidth(), textureIcon.texture().textureHeight());
+            case CategoryIcon.TextureIcon textureIcon -> textureIcon.texture().apply((TextureConfig.UnitRemappingFunction<EmiTexture>)EmiTexture::new);
             case CategoryIcon.EmptyIcon empty -> EMPTY_RENDERABLE;
         };
     }

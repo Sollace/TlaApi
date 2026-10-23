@@ -21,6 +21,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.context.ContextParameterMap;
 import net.minecraft.util.dynamic.Codecs;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalDouble;
@@ -43,7 +45,7 @@ import io.github.mattidragon.tlaapi.impl.Untyped;
  * Represents a stack of items or fluids for use with recipe viewers.
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack, TlaStack.TlaEmptyStack {
+public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.TlaFluidStack, TlaStack.TlaItemStack, TlaStack.TlaEmptyStack {
     static <X, T extends TlaStack> MapCodec<T> createCodec(MapCodec<RegistryEntry<X>> variantCodec, Function4<RegistryEntry<X>, ComponentChanges, Long, OptionalDouble, T> constructor) {
         return RecordCodecBuilder.mapCodec(i -> i.group(
                 variantCodec.forGetter(o -> Untyped.cast(o.variant)),
@@ -170,12 +172,14 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
     /**
      * Returns a copy of this stack with the provided amount.
      */
+    @Override
     public abstract TlaStack withAmount(long amount);
 
     /**
      * Returns a copy of this stack with the provided chance.
      * @implNote The chances for each stack in an ingredient are averaged for display in EMI.
      */
+    @Override
     public abstract TlaStack withChance(double chance);
 
     /**
@@ -198,6 +202,11 @@ public sealed abstract class TlaStack permits TlaStack.TlaFluidStack, TlaStack.T
 
     public ComponentChanges getComponents() {
         return components;
+    }
+
+    @Override
+    public Collection<? extends TlaStack> stacks() {
+        return List.of(this);
     }
 
     public static final class TlaEmptyStack extends TlaStack {

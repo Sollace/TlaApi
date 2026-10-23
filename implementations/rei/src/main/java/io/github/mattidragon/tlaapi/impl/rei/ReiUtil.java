@@ -50,7 +50,7 @@ public class ReiUtil {
         return switch (ingredient.size()) {
             case 0 -> TlaIngredient.EMPTY;
             case 1 -> TlaIngredient.ofStacks(convertStack(ingredient.getFirst()));
-            default -> TlaIngredient.ofStacks(ingredient.stream().map(ReiUtil::convertStack).toList());
+            default -> TlaIngredient.ofStacks(ingredient.stream().map(ReiUtil::convertStack));
         };
     }
 }
