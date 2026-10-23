@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import com.mojang.serialization.Codec;
 
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
+import io.github.mattidragon.tlaapi.impl.MoreCodecs;
 import io.github.mattidragon.tlaapi.impl.util.Collections;
 
 /**
@@ -38,8 +39,8 @@ public sealed interface TlaIngredient permits TlaIngredient.Many, TlaStack {
      */
     TlaIngredient EMPTY = new Many(List.of());
 
-    Codec<TlaIngredient> CODEC = TlaStack.CODEC.listOf().xmap(TlaIngredient::ofStacks, i -> List.copyOf(i.stacks()));
-    PacketCodec<RegistryByteBuf, TlaIngredient> PACKET_CODEC = TlaStack.PACKET_CODEC.collect(PacketCodecs.toList()).xmap(TlaIngredient::ofStacks, i -> List.copyOf(i.stacks()));
+    Codec<TlaIngredient> CODEC = Codec.lazyInitialized(() -> TlaStack.CODEC.listOf().xmap(TlaIngredient::ofStacks, i -> List.copyOf(i.stacks())));
+    PacketCodec<RegistryByteBuf, TlaIngredient> PACKET_CODEC = MoreCodecs.lazy(() -> TlaStack.PACKET_CODEC.collect(PacketCodecs.toList()).xmap(TlaIngredient::ofStacks, i -> List.copyOf(i.stacks())));
 
     Collection<? extends TlaStack> stacks();
 

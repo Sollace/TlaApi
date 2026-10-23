@@ -66,7 +66,7 @@ public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.
     }
 
     private static final Supplier<BiMap<Identifier, Type>> REGISTRY = Untyped.memoize(() -> HashBiMap.create(Map.of(
-            Identifier.ofVanilla("empty"), TlaEmptyStack.TYPE.get(),
+            Identifier.ofVanilla("empty"), TlaEmptyStack.TYPE,
             Identifier.ofVanilla("fluid"), TlaFluidStack.TYPE,
             Identifier.ofVanilla("item"), TlaItemStack.TYPE
     )));
@@ -210,12 +210,12 @@ public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.
     }
 
     public static final class TlaEmptyStack extends TlaStack {
-        static final Supplier<Type> TYPE = Untyped.memoize(() -> new Type(MapCodec.unit(TlaEmptyStack.INSTANCE), PacketCodec.unit(TlaEmptyStack.INSTANCE)));
+        static final Type TYPE = new Type(MapCodec.unit(() -> TlaEmptyStack.INSTANCE), MoreCodecs.unit(() -> TlaEmptyStack.INSTANCE));
         static final TlaEmptyStack INSTANCE = new TlaEmptyStack();
 
         @SuppressWarnings("deprecation")
         private TlaEmptyStack() {
-            super(TYPE.get(), 0, OptionalDouble.empty(), Items.AIR.getRegistryEntry(), ComponentChanges.EMPTY);
+            super(TYPE, 0, OptionalDouble.empty(), Items.AIR.getRegistryEntry(), ComponentChanges.EMPTY);
         }
 
         @Override
@@ -236,12 +236,6 @@ public sealed abstract class TlaStack implements TlaIngredient permits TlaStack.
         @Override
         public ComponentChanges getComponents() {
             return ComponentChanges.EMPTY;
-        }
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public RegistryEntry<?> getRegistryEntry() {
-            return Items.AIR.getRegistryEntry();
         }
 
         @Override

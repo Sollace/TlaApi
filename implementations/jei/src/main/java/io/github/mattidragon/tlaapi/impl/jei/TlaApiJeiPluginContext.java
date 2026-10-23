@@ -37,6 +37,8 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.util.Identifier;
 import java.util.*;
@@ -260,9 +262,10 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
 
     private <T> TlaRecipe reconstructExternalRecipe(IRecipeCategory<T> category, T recipe, IPlatformFluidHelper<?> helper, IRecipeManager recipeManager) {
         var ingredientSupplier = recipeManager.getRecipeIngredients(category, recipe);
-        return new BasicTlaRecipe(lookupCategory(category), null, () -> {
+        var id = category.getRegistryName(recipe);
+        return new BasicTlaRecipe(lookupCategory(category), id == null ? null : RegistryKey.of(RegistryKeys.RECIPE, id), () -> {
             return ingredientSupplier.getIngredients(RecipeIngredientRole.INPUT).stream()
-                .map(input -> JeiUtils.convertStack(null, input).asIngredient())
+                .map(input -> JeiUtils.convertStack(helper, input).asIngredient())
                 .toList();
         }, List::of, List::of);
     }

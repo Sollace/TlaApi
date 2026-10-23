@@ -229,7 +229,6 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRuntime(IRuntimeRegistration registration) {
-        this.onRuntimeAvailable(null);
         var recipeManager = registration.getRecipeManager();
         var context = this.context.get();
         recipeManager.createRecipeCategoryLookup().get().forEach(category -> {
