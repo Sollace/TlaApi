@@ -3,7 +3,7 @@ package io.github.mattidragon.tlaapi.impl;
 import java.util.OptionalDouble;
 import java.util.function.Supplier;
 
-import org.spongepowered.include.com.google.common.base.Preconditions;
+import com.google.common.base.Preconditions;
 
 import com.mojang.serialization.Codec;
 import io.netty.buffer.ByteBuf;
