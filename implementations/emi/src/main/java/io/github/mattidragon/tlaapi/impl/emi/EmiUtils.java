@@ -1,5 +1,7 @@
 package io.github.mattidragon.tlaapi.impl.emi;
 
+import java.util.stream.Stream;
+
 import dev.emi.emi.api.render.EmiRenderable;
 import dev.emi.emi.api.render.EmiTexture;
 import dev.emi.emi.api.stack.EmiIngredient;
@@ -24,7 +26,7 @@ class EmiUtils {
     }
 
     public static EmiIngredient convertIngredient(TlaIngredient ingredient) {
-        return Collections.reduce(ingredient.stacks(), EmiStack.EMPTY, EmiUtils::convertStack, stacks -> {
+        return Collections.reduce(ingredient.stacks(), EmiStack.EMPTY, EmiUtils::convertStack, (Stream<EmiStack> stacks) -> {
             // Emi ingredients store the chance in the ingredient itself, not in the stacks
             // We calculate the average chance of all stacks and set it in the ingredient
             // As emi doesn't differentiate between 100% and a lack of chance, we set it to 1 if there is no chance
