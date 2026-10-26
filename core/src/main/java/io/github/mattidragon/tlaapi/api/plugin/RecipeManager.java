@@ -46,7 +46,7 @@ public sealed interface RecipeManager permits RecipeManager.Impl {
     }
 
     static RecipeManager of(WrapperLookup registries, ServerRecipeManager recipeManager) {
-        return of(registries, () -> recipeManager.values().stream(), recipeManager::getAllOfType);
+        return ModdingPlatform.getInstance().getRecipeManager(registries, recipeManager);
     }
 
     static <I extends RecipeInput, T extends Recipe<I>> RecipeManager of(

@@ -1,0 +1,22 @@
+license="MIT"
+
+[[mods]]
+modId="tla-api"
+version="${version}"
+displayName="TLA-Api"
+authors="MattiDragon, Sollace"
+description="An abstraction layer over recipe viewer apis for minecraft."
+
+[[dependencies.tla-api]]
+    modId="neoforge"
+    type="required"
+    versionRange="${neo_version}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.tla-api]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version}"
+    ordering="NONE"
+    side="BOTH"

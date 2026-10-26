@@ -7,9 +7,11 @@ import me.shedaniel.math.Dimension;
 import me.shedaniel.math.Point;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.gui.Renderer;
+import net.minecraft.util.Identifier;
 
 public class TlaWidgets {
     private static final Renderer EMPTY_RENDERER = (graphics, bounds, mouseX, mouseY, delta) -> {};
+    private static final Identifier PLUS_SIGN = TlaApi.id("textures/gui/recipe_plus_sign.png");
 
     public static Renderer iconToRenderer(CategoryIcon icon) {
         return switch (icon) {
@@ -38,7 +40,7 @@ public class TlaWidgets {
 
     public static TextureWidget plusSign(Point point) {
         return new TextureWidget.Builder(new Rectangle(point, new Dimension(13, 13)))
-                .texture(TlaApi.id("textures/gui/recipe_plus_sign.png"))
+                .texture(PLUS_SIGN)
                 .textureSize(13, 13)
                 .build();
     }

@@ -4,11 +4,14 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import io.github.mattidragon.tlaapi.api.plugin.ModdingPlatform;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidConstants;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.recipe.ServerRecipeManager;
+import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 
 public class FabricModdingPlatform implements ModdingPlatform, ModInitializer {
     public static Consumer<Runnable> CLIENT_TICK_HANDLERS = handler -> {};
@@ -41,5 +44,10 @@ public class FabricModdingPlatform implements ModdingPlatform, ModInitializer {
     @Override
     public void registerClientTickHandler(Runnable handler) {
         CLIENT_TICK_HANDLERS.accept(handler);
+    }
+
+    @Override
+    public RecipeManager getRecipeManager(WrapperLookup registries, ServerRecipeManager recipeManager) {
+        return RecipeManager.of(registries, () -> recipeManager.values().stream(), recipeManager::getAllOfType);
     }
 }

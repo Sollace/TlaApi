@@ -3,12 +3,8 @@ pluginManagement {
         maven("https://maven.fabricmc.net/") {
             name = "Fabric"
         }
-        maven("https://jitpack.io") {
-            name = "Jitpack"
-            content {
-                includeGroup("com.github.dexman545")
-                includeGroup("com.github.dexman545.Outlet")
-            }
+        maven("https://repo.codemc.io/repository/relativitymc/") {
+            name = "RelativityMC"
         }
         mavenCentral()
         gradlePluginPortal()
@@ -26,7 +22,10 @@ dependencyResolutionManagement {
         library("fabric-api", "net.fabricmc.fabric-api:fabric-api:${getProp("fabric_version")}")
         library("fabric-loader", "net.fabricmc:fabric-loader:${getProp("loader_version")}")
         library("fabric-yarn", "net.fabricmc:yarn:${getProp("yarn_mappings")}")
+        library("fabric-yarn-neo", "dev.architectury:yarn-mappings-patch-neoforge:${getProp("neo_yarn_mappings")}")
         library("minecraft", "com.mojang:minecraft:${getProp("minecraft_version")}")
+
+        library("neoforge", "net.neoforged:neoforge:${getProp("neoforge_version")}")
 
         library("devlogin", "com.ptsmods:devlogin:${getProp("devlogin_version")}")
 
@@ -48,5 +47,6 @@ dependencyResolutionManagement {
 rootProject.name = "TlaApi"
 includeBuild("build-src")
 include(":core", ":testmod")
+include(":fabric", ":neoforge")
 include(getProp("recipe_mod_modules").split(" ").map{ module -> "implementations:${module}" })
 

@@ -12,8 +12,8 @@ loom {
 fun createRequiredResourceDirs() {
     val buildDir = project.layout.buildDirectory.getAsFile().get()
     val dirs = listOf(
-        File(buildDir, "resources/client"),
-        File(buildDir, "classes/java/client")
+        File(project.buildDir, "resources/client"),
+        File(project.buildDir, "classes/java/client")
     )
     dirs.forEach { it.mkdirs() }
 }
