@@ -21,12 +21,14 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaRecipe;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.BuiltInCategoryRegistry;
+import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.entry.comparison.EntryComparator;
 import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
 import me.shedaniel.rei.api.common.entry.comparison.ItemComparatorRegistry;
+import me.shedaniel.rei.api.common.registry.display.DisplayConsumer.RecipeDisplayConsumer;
 import me.shedaniel.rei.api.common.registry.display.DisplayRegistryCommon;
 import me.shedaniel.rei.api.common.category.CategoryIdentifier;
 import me.shedaniel.rei.api.common.display.Display;
@@ -34,6 +36,7 @@ import net.minecraft.fluid.Fluid;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemConvertible;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.util.Identifier;
@@ -42,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.Nullable;
@@ -137,18 +141,38 @@ public class ReiImplementation implements PluginContext {
         INSTANCE = this;
     }
 
-    public void registerDisplays(DisplayRegistryCommon<?> registry) {
-        registry.beginFiller(RecipeDisplay.class)
-                .filter(display -> recipeGenerators.stream().anyMatch(generator -> generator.type == display.serializer()))
-                .fillMultiple(display -> recipeGenerators.stream()
-                        .filter(generator -> generator.type == display.serializer())
-                        .findFirst()
-                        .stream()
-                        .flatMap(generator -> generator.generator.apply(Untyped.cast(display)))
-                        .map(TlaDisplay::of)
-                        .toList());
+    private List<RecipeGenerator<RecipeDisplay>> getRecipeGenerators() {
+        return Untyped.cast(recipeGenerators);
+    }
 
+    @SuppressWarnings("unchecked")
+    public void registerDisplays(DisplayRegistryCommon<?> registry) {
+        TlaApi.LOGGER.info("Register Displays called with " + registry);
         RecipeManager recipeManager = RecipeManager.of(bootstrapContext.getWorld());
+
+        var groupedGenerators = getRecipeGenerators().stream().collect(Collectors.groupingBy(RecipeGenerator::type));
+
+        if (registry instanceof RecipeDisplayConsumer consumer) {
+            // TODO: Y u no work? U work 4 dem -> DefaultClientPlugin But no 4 us
+            groupedGenerators.forEach((type, generators) -> {
+                consumer.beginRecipeFiller(RecipeDisplay.class)
+                    .filterType(type)
+                    .fillMultiple((display, id) -> {
+                        return generators.stream()
+                                .flatMap(g -> g.generator().apply(display))
+                                .map(TlaDisplay::of).toList();
+                    });
+                });
+        } else {
+            registry.beginFiller(RecipeEntry.class)
+                    .fillMultiple(entry -> {
+                return ((List<RecipeDisplay>)entry.value().getDisplays()).stream()
+                        .filter(display -> groupedGenerators.containsKey(display.serializer()))
+                        .flatMap(display -> groupedGenerators.get(display.serializer()).stream().flatMap(g -> g.generator().apply(display)))
+                        .map(TlaDisplay::of)
+                        .toList();
+            });
+        }
 
         customGenerators.stream()
             .flatMap(generator -> generator.apply(recipeManager))
@@ -258,7 +282,7 @@ public class ReiImplementation implements PluginContext {
     }
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
-    private record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
+    public record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
     public record WrappedEmiCategory(
             @Nullable BuiltInRecipeCategory type,
             CategoryIdentifier<?> id,

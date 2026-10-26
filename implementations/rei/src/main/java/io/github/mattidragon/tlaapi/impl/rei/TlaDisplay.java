@@ -38,7 +38,7 @@ public class TlaDisplay implements Display {
         this.recipe = recipe;
     }
 
-    static TlaDisplay of(TlaRecipe recipe) {
+    public static TlaDisplay of(TlaRecipe recipe) {
         return new TlaDisplay(ReiImplementation.INSTANCE.getCategoryIdentifier(recipe.getCategory()), recipe);
     }
 

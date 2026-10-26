@@ -47,7 +47,7 @@ public record TestRecipe(Ingredient input, ItemStack output) implements Recipe<C
 
     @Override
     public IngredientPlacement getIngredientPlacement() {
-        return IngredientPlacement.NONE;
+        return IngredientPlacement.forSingleSlot(input);
     }
 
     @Override
