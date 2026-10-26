@@ -23,7 +23,7 @@ public record TestTlaRecipe(TestRecipeDisplay recipe) implements TlaRecipe {
 
     @Override
     public List<TlaIngredient> getInputs() {
-        return List.of(TlaIngredient.ofSlotDisplay(recipe.result()));
+        return List.of(TlaIngredient.ofSlotDisplay(recipe.input()));
     }
 
     @Override
