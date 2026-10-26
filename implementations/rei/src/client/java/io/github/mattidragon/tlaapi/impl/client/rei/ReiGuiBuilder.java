@@ -4,6 +4,7 @@ import io.github.mattidragon.tlaapi.api.client.gui.*;
 import io.github.mattidragon.tlaapi.api.gui.TextureConfig;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
 import io.github.mattidragon.tlaapi.impl.rei.ReiUtil;
+import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.AnimatedTextureWidget;
 import io.github.mattidragon.tlaapi.impl.client.rei.util.ReiCustomWidget;
@@ -14,7 +15,6 @@ import me.shedaniel.math.Point;
 import me.shedaniel.math.Rectangle;
 import me.shedaniel.rei.api.client.gui.widgets.*;
 import net.minecraft.text.Text;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.DoubleSupplier;
@@ -23,16 +23,18 @@ import java.util.function.Function;
 class ReiGuiBuilder implements GuiBuilder {
     private final List<Widget> widgets = new ArrayList<>();
     private final Rectangle bounds;
+    private final TlaBounds relativeBounds;
 
     public ReiGuiBuilder(Rectangle bounds) {
         this.bounds = bounds.clone();
         this.bounds.grow(-5, -5);
+        this.relativeBounds = toRelative(bounds);
         widgets.add(Widgets.createRecipeBase(bounds));
     }
 
     @Override
     public SlotConfig addSlot(TlaIngredient ingredient, int x, int y) {
-        var widget = Widgets.createSlot(getPoint(x + 1, y + 1));
+        var widget = Widgets.createSlot(toAbsolute(x + 1, y + 1));
         widget.entries(ReiUtil.convertIngredient(ingredient));
         return addWidget(widget, ReiSlotConfig::new);
     }
@@ -68,39 +70,34 @@ class ReiGuiBuilder implements GuiBuilder {
 
     @Override
     public WidgetConfig addArrow(int x, int y, boolean full) {
-        return addWidget(TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 106, 91, 24, 17), ReiWidgetConfig::new);
+        return addWidget(TlaWidgets.reiTexture(toAbsolute(x, y), full ? 82 : 106, 91, 24, 17), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addAnimatedArrow(int x, int y, int duration) {
-        return addWidget(Widgets.createArrow(getPoint(x, y)).animationDurationMS(duration), ReiWidgetConfig::new);
+        return addWidget(Widgets.createArrow(toAbsolute(x, y)).animationDurationMS(duration), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addFlame(int x, int y, boolean full) {
-        return addWidget(TlaWidgets.reiTexture(getPoint(x, y), full ? 82 : 1, full ? 77 : 74, 14, 14), ReiWidgetConfig::new);
+        return addWidget(TlaWidgets.reiTexture(toAbsolute(x, y), full ? 82 : 1, full ? 77 : 74, 14, 14), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addAnimatedFlame(int x, int y, int duration) {
-        var point = getPoint(x, y);
+        var point = toAbsolute(x, y);
         widgets.add(TlaWidgets.reiTexture(point, 1, 74, 14, 14));
-        return addWidget(TlaWidgets.animatedFlame(point, 1000), ReiWidgetConfig::new);
+        return addWidget(TlaWidgets.animatedFlame(point, duration), ReiWidgetConfig::new);
     }
 
     @Override
     public WidgetConfig addPlusSign(int x, int y) {
-        return addWidget(TlaWidgets.plusSign(getPoint(x, y)), ReiWidgetConfig::new);
-    }
-
-    @Override
-    public TextConfig addText(Text text, int x, int y, boolean shadow) {
-        return addWidget(Widgets.createLabel(getPoint(x, y), text).shadow(shadow), ReiTextConfig::new);
+        return addWidget(TlaWidgets.plusSign(toAbsolute(x, y)), ReiWidgetConfig::new);
     }
 
     @Override
     public TextConfig addText(Text text, int x, int y, int color, boolean shadow) {
-        return addWidget(Widgets.createLabel(getPoint(x, y), text).shadow(shadow).color(color), ReiTextConfig::new);
+        return addWidget(Widgets.createLabel(toAbsolute(x, y), text).shadow(shadow).color(color), ReiTextConfig::new);
     }
 
     @Override
@@ -110,7 +107,7 @@ class ReiGuiBuilder implements GuiBuilder {
 
     @Override
     public void addTooltip(int x, int y, int width, int height, List<Text> tooltip) {
-        widgets.add(Widgets.createTooltip(new Rectangle(getPoint(x, y), new Dimension(width, height)), tooltip));
+        widgets.add(Widgets.createTooltip(toAbsolute(x, y, width, height), tooltip));
     }
 
     private <T extends WidgetConfig, W extends WidgetWithBounds> T addWidget(W widget, Function<W, ? extends T> config) {
@@ -120,15 +117,31 @@ class ReiGuiBuilder implements GuiBuilder {
 
     @Override
     public TlaBounds getBounds() {
-        return new TlaBounds(bounds.x, bounds.y, bounds.width, bounds.height);
+        // Tla bounds are relative whilst REI's widgets all operate on absolute coordinates
+        return relativeBounds;
     }
 
     public List<Widget> getWidgets() {
         return widgets;
     }
 
-    private Point getPoint(int x, int y) {
-        return new Point(bounds.x + x, bounds.y + y);
+    private Rectangle toAbsolute(int x, int y, int width, int height) {
+        return new Rectangle(toAbsolute(x, y), new Dimension(width, height));
+    }
+
+    private Point toAbsolute(int x, int y) {
+        return new Point(bounds.x + checkRange(x, bounds.width), bounds.y + checkRange(y, bounds.height));
+    }
+
+    private int checkRange(int value, int max) {
+        if (value < 0 || value > max) {
+            TlaApi.LOGGER.debug("Recipe is adding elements outside of the visible area. This may be a bug!");
+        }
+        return value;
+    }
+
+    private TlaBounds toRelative(Rectangle reiBounds) {
+        return new TlaBounds(reiBounds.x - bounds.x, reiBounds.y - bounds.y, reiBounds.width, reiBounds.height);
     }
 
     private class ReiWidgetConfig<T extends ReiWidgetConfig<T, W>, W extends WidgetWithBounds> implements WidgetConfig {
@@ -141,17 +154,13 @@ class ReiGuiBuilder implements GuiBuilder {
         @Override
         public T addTooltip(List<Text> tooltip) {
             widgets.add(Widgets.createTooltip(widget::getBounds, tooltip));
-            return getThis();
+            return Untyped.cast(this);
         }
 
         @Override
         public TlaBounds getBounds() {
-            var reiBounds = widget.getBounds();
-            return new TlaBounds(reiBounds.x + bounds.x, reiBounds.y + bounds.y, reiBounds.width, reiBounds.height);
-        }
-
-        protected T getThis() {
-            return Untyped.cast(this);
+            // REI's coordinates are absolute so translate back to relative
+            return toRelative(widget.getBounds());
         }
     }
 

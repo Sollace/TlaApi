@@ -7,6 +7,7 @@ import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
 import io.github.mattidragon.tlaapi.impl.client.SimpleCustomTlaWidget;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.text.Text;
+import net.minecraft.util.Colors;
 
 import java.util.Arrays;
 import java.util.List;
@@ -148,7 +149,7 @@ public interface GuiBuilder {
      * @see #addText(Text, int, int, int, boolean)
      */
     default TextConfig addText(Text text, int x, int y, boolean shadow) {
-        return addText(text, x, y, 0xffffffff, shadow);
+        return addText(text, x, y, Colors.WHITE, shadow);
     }
 
     /**
