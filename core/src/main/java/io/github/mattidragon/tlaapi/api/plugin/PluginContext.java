@@ -2,6 +2,7 @@ package io.github.mattidragon.tlaapi.api.plugin;
 
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.annotation.SupportsExcept;
+import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.recipe.StableRecipeIdentifier;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;
@@ -14,11 +15,15 @@ import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import org.jetbrains.annotations.ApiStatus;
 
 /**
  * The main way plugins interact with the API.
@@ -147,6 +152,15 @@ public interface PluginContext {
      */
     @SupportsExcept({ "eiv" })
     Comparisons<ItemConvertible> getItemComparisons();
+
+    /**
+     * Adds a handler for placing and auto-crafting recipes.
+     * @param screenType The type of the screen handler for which this applies.
+     * @param category The category which should be opened.
+     * @param placementHandler Handler to define which slots to use when placing a recipe
+     */
+    @ApiStatus.Experimental
+    <C extends ScreenHandler> void addPlacementHandler(ScreenHandlerType<C> screenType, TlaCategory category, RecipePlacementHandler<C> placementHandler);
 
     /**
      * Gets a registry used for registering the default comparisons for fluids.

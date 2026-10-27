@@ -6,7 +6,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
+import org.jetbrains.annotations.ApiStatus;
+
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.RecipeEntry;
@@ -20,7 +21,7 @@ import net.minecraft.world.World;
 /**
  * Provides access to regular recipes
  */
-@ImplementationsExtend
+@ApiStatus.NonExtendable
 public sealed interface RecipeManager permits RecipeManager.Impl {
     /**
      * Gets a stream of every recipe in this manager.
@@ -57,6 +58,7 @@ public sealed interface RecipeManager permits RecipeManager.Impl {
         return new Impl<>(registries, supplier, typedLookup);
     }
 
+    @ApiStatus.Internal
     final class Impl<I extends RecipeInput, T extends Recipe<I>> implements RecipeManager {
         private final WrapperLookup registries;
         private final Supplier<Stream<RecipeEntry<?>>> supplier;

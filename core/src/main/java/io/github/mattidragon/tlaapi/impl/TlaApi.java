@@ -28,10 +28,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@ApiStatus.Internal
 public class TlaApi {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA Api");
     public static ModdingPlatform PLATFORM = new ModdingPlatform() {

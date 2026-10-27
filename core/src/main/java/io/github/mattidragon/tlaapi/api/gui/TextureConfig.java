@@ -4,6 +4,8 @@ import net.minecraft.util.Identifier;
 
 import java.util.Objects;
 
+import com.google.common.base.Preconditions;
+
 /**
  * Represents a texture configuration.
  * @see Builder
@@ -19,45 +21,7 @@ public record TextureConfig (
         int regionHeight,
         int textureWidth,
         int textureHeight) {
-
-    /**
-     * @deprecated Use builder instead.
-     */
-    @Deprecated
-    public TextureConfig(Identifier texture, int width, int height, int u, int v, int regionWidth, int regionHeight, int textureWidth, int textureHeight) {
-        this(texture, texture, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
-    }
-
-    /**
-     * Creates a texture config with a 1 to 1 scaling and a texture size of 256x256.
-     *
-     * @deprecated Use {@link #builder()} instead.
-     */
-    @Deprecated
-    public static TextureConfig of(Identifier texture, int width, int height, int u, int v) {
-        return builder().texture(texture).size(width, height).uv(u, v).build();
-    }
-
-    /**
-     * Creates a texture config with a 1 to 1 scaling.
-     *
-     * @deprecated Use {@link #builder()} instead.
-     */
-    @Deprecated
-    public static TextureConfig of(Identifier texture, int width, int height, int u, int v, int textureWidth, int textureHeight) {
-        return builder().texture(texture).size(width, height).uv(u, v).textureSize(textureWidth, textureHeight).build();
-    }
-
-    /**
-     * Creates a texture config that captures a whole texture file.
-     *
-     * @deprecated Use {@link #builder()} instead.
-     */
-    @Deprecated
-    public static TextureConfig of(Identifier texture, int width, int height) {
-        return builder().texture(texture).fullSize(width, height).build();
-    }
-
+    public static final int DEFAULT_TEXTURE_SIZE = 256;
     /**
      * Creates a new texture config builder.
      *
@@ -65,14 +29,6 @@ public record TextureConfig (
      */
     public static Builder builder() {
         return new Builder();
-    }
-
-    /**
-     * @deprecated Use {@link #lightTexture()} or {@link #darkTexture()} instead.
-     */
-    @Deprecated
-    public Identifier texture() {
-        return lightTexture();
     }
 
     /**
@@ -93,20 +49,17 @@ public record TextureConfig (
         private int v = 0;
         private int regionWidth = -1;
         private int regionHeight = -1;
-        private int textureWidth = 256;
-        private int textureHeight = 256;
+        private int textureWidth = DEFAULT_TEXTURE_SIZE;
+        private int textureHeight = DEFAULT_TEXTURE_SIZE;
 
-        private Builder() {
-        }
+        private Builder() { }
 
         /**
          * Configures the texture to use the same texture for light and dark mode.
          */
         public Builder texture(Identifier texture) {
             Objects.requireNonNull(texture, "Texture cannot be null");
-            this.lightTexture = texture;
-            this.darkTexture = texture;
-            return this;
+            return texture(texture, texture);
         }
 
         /**
@@ -124,8 +77,7 @@ public record TextureConfig (
          * The default is 0, 0.
          */
         public Builder uv(int u, int v) {
-            if (u < 0 || v < 0)
-                throw new IllegalArgumentException("UV coordinates must be non-negative");
+            Preconditions.checkArgument(u >= 0 && v >= 0, "UV coordinates must be non-negative");
             this.u = u;
             this.v = v;
             return this;
@@ -136,8 +88,7 @@ public record TextureConfig (
          * If the region size is not set, this will also set the region size.
          */
         public Builder size(int width, int height) {
-            if (width <= 0 || height <= 0)
-                throw new IllegalArgumentException("Size must be positive");
+            Preconditions.checkArgument(width * height > 0, "Size must be positive");
             this.width = width;
             this.height = height;
             if (regionWidth == -1)
@@ -160,8 +111,7 @@ public record TextureConfig (
          * Sets the size of the texture in the file.
          */
         public Builder regionSize(int regionWidth, int regionHeight) {
-            if (regionWidth <= 0 || regionHeight <= 0)
-                throw new IllegalArgumentException("Region size must be positive");
+            Preconditions.checkArgument(regionWidth * regionHeight > 0, "Region size must be positive");
             this.regionWidth = regionWidth;
             this.regionHeight = regionHeight;
             return this;
@@ -172,8 +122,7 @@ public record TextureConfig (
          * The default is 256x256.
          */
         public Builder textureSize(int textureWidth, int textureHeight) {
-            if (textureWidth <= 0 || textureHeight <= 0)
-                throw new IllegalArgumentException("Texture size must be positive");
+            Preconditions.checkArgument(textureWidth * textureHeight > 0, "Texture size must be positive");
             this.textureWidth = textureWidth;
             this.textureHeight = textureHeight;
             return this;
@@ -185,12 +134,9 @@ public record TextureConfig (
          * @throws IllegalStateException If the size, region size, or texture is not set.
          */
         public TextureConfig build() {
-            if (width == -1 || height == -1)
-                throw new IllegalStateException("Size not set");
-            if (regionWidth == -1 || regionHeight == -1)
-                throw new IllegalStateException("Region size not set");
-            if (lightTexture == null || darkTexture == null)
-                throw new IllegalStateException("Texture not set");
+            Preconditions.checkState(width >= 0 && height >= 0, "Size not set");
+            Preconditions.checkState(regionWidth >= 0 && regionHeight >= 0, "Region size not set");
+            Preconditions.checkState(lightTexture != null && darkTexture != null, "Texture not set");
             return new TextureConfig(lightTexture, darkTexture, width, height, u, v, regionWidth, regionHeight, textureWidth, textureHeight);
         }
     }
