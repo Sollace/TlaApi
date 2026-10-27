@@ -4,11 +4,11 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
-import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginLoader;
+import io.github.mattidragon.tlaapi.api.gui.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
@@ -24,6 +24,7 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.helpers.IPlatformFluidHelper;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.RecipeIngredientRole;
@@ -31,7 +32,6 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.common.platform.IPlatformFluidHelperInternal;
-import mezz.jei.library.runtime.JeiHelpers;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
@@ -149,7 +149,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         );
     }
 
-    public IRecipeCategory<?> lookupCategory(TlaCategory category, JeiHelpers helpers) {
+    public IRecipeCategory<?> lookupCategory(TlaCategory category, IJeiHelpers helpers) {
         var jeiCategory = preparedCategories.get(category);
 
         if (jeiCategory != null) {

@@ -11,7 +11,7 @@ import com.google.common.collect.Multimap;
 
 import de.crafty.eiv.common.api.recipe.IEivRecipeViewType;
 import de.crafty.eiv.common.recipe.inventory.RecipeViewMenu.SlotDefinition;
-import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
+import io.github.mattidragon.tlaapi.api.gui.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.recipe.CategoryIcon;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import net.minecraft.item.ItemStack;

@@ -8,7 +8,7 @@ import com.google.common.collect.Multimap;
 
 import dev.architectury.fluid.FluidStack;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
-import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
+import io.github.mattidragon.tlaapi.api.gui.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;

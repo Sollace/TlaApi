@@ -1,4 +1,4 @@
-package io.github.mattidragon.tlaapi.api.client;
+package io.github.mattidragon.tlaapi.api.gui;
 
 import java.util.Objects;
 import java.util.stream.Stream;

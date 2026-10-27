@@ -2,7 +2,7 @@ package io.github.mattidragon.tlaapi.api.plugin;
 
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
 import io.github.mattidragon.tlaapi.api.annotation.SupportsExcept;
-import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
+import io.github.mattidragon.tlaapi.api.gui.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.recipe.StableRecipeIdentifier;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
 import io.github.mattidragon.tlaapi.api.recipe.TlaIngredient;

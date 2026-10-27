@@ -2,6 +2,7 @@ package io.github.mattidragon.tlaapi.api.client;
 
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
+import io.github.mattidragon.tlaapi.impl.PluginsExtend;
 import net.minecraft.client.gui.screen.Screen;
 
 import java.util.Collection;
@@ -11,6 +12,7 @@ import java.util.function.Function;
  * A handler for dragging ghost stacks onto a screen.
  * Used to set filters or similar things.
  */
+@PluginsExtend
 public interface StackDragHandler<T extends Screen> {
     /**
      * Checks if this handler applies to the given screen.
