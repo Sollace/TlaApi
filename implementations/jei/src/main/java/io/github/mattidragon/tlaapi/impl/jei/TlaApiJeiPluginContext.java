@@ -187,11 +187,11 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     }
 
     @Override
-    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
+    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, StreamedRecipeGenerator<I, T> generator) {
         recipeFunctions.add(entry -> entry.value().getDisplays().stream()
                     .filter(display -> display.serializer() == type)
                     .map(Untyped::<RecipeDisplay, T>cast)
-                    .flatMap(generator));
+                    .flatMap(display -> generator.apply(entry.id(), display)));
     }
 
     @Override
@@ -229,11 +229,10 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         sizeProviders.add(new ScreenSizeProvider<>(clazz, provider));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public <T extends Screen> void addExclusionZoneProvider(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {
         if (!HandledScreen.class.isAssignableFrom(clazz)) return; // JEI only supports exclusion zones on handled screens
-        exclusionZoneProviders.add(new ExclusionZoneProvider<>((Class<HandledScreen<?>>) clazz, (Function<HandledScreen<?>, ? extends Iterable<TlaBounds>>) provider));
+        exclusionZoneProviders.add(new ExclusionZoneProvider<>(Untyped.cast(clazz), Untyped.cast(provider)));
     }
 
     @Override

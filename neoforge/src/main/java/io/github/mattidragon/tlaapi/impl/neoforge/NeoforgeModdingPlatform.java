@@ -51,7 +51,7 @@ public class NeoforgeModdingPlatform implements ModdingPlatform {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
-        TlaApi.SERVER.set(event.getServer());
+        TlaApi.onServerLoaded(event.getServer());
     }
 
     @Override
@@ -60,7 +60,7 @@ public class NeoforgeModdingPlatform implements ModdingPlatform {
     }
 
     @Override
-    public void registerClientTickHandler(Runnable handler) {
+    public void addClientTickListener(Runnable handler) {
         CLIENT_TICK_HANDLERS.add(handler);
     }
 

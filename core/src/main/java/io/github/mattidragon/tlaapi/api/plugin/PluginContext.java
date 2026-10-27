@@ -10,8 +10,10 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import io.github.mattidragon.tlaapi.impl.ImplementationsExtend;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.item.ItemConvertible;
+import net.minecraft.recipe.Recipe;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.util.Identifier;
 import java.util.Optional;
 import java.util.function.Function;
@@ -62,7 +64,7 @@ public interface PluginContext {
      * @see #addGenerator
      */
     default <I extends RecipeInput, T extends RecipeDisplay> void addRecipeGenerator(RecipeDisplay.Serializer<T> type, Function<T, TlaRecipe> generator) {
-        addRecipeMultiGenerator(type, entry -> Stream.of(generator.apply(entry)));
+        addRecipeGenerator(type, (id, display) -> generator.apply(display));
     }
 
     /**
@@ -70,7 +72,25 @@ public interface PluginContext {
      * @see TlaRecipe
      * @see #addGenerator
      */
-    <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator);
+    default <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
+        addRecipeMultiGenerator(type, (id, display) -> generator.apply(display));
+    }
+
+    /**
+     * Adds a recipe generator that creates recipe entries in the recipe viewer for all recipes of a given type.
+     * @see TlaRecipe
+     * @see #addGenerator
+     */
+    default <I extends RecipeInput, T extends RecipeDisplay> void addRecipeGenerator(RecipeDisplay.Serializer<T> type, UnaryRecipeGenerator<I, T> generator) {
+        addRecipeMultiGenerator(type, generator.streamed());
+    }
+
+    /**
+     * Adds a recipe generator that creates recipe entries in the recipe viewer for all recipes of a given type.
+     * @see TlaRecipe
+     * @see #addGenerator
+     */
+    <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, StreamedRecipeGenerator<I, T> generator);
 
     /**
      * Adds a recipe generator that can create recipe entries in the recipe viewer from any source.
@@ -147,5 +167,19 @@ public interface PluginContext {
      */
     default boolean owns(Object o) {
         return o instanceof RecipeViewerOwned r && r.getRecipeViewer().equals(getActiveViewer());
+    }
+
+    @FunctionalInterface
+    interface UnaryRecipeGenerator<I extends RecipeInput, T extends RecipeDisplay> {
+        TlaRecipe apply(RegistryKey<Recipe<?>> id, T display);
+
+        default StreamedRecipeGenerator<I, T> streamed() {
+            return (id, display) -> Stream.of(apply(id, display));
+        }
+    }
+
+    @FunctionalInterface
+    interface StreamedRecipeGenerator<I extends RecipeInput, T extends RecipeDisplay> {
+        Stream<TlaRecipe> apply(RegistryKey<Recipe<?>> id, T display);
     }
 }

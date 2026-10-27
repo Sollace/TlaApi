@@ -7,19 +7,24 @@ import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewerOwned;
 import io.github.mattidragon.tlaapi.api.plugin.TlaApiPlugin;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader.BootstrapFunction;
+import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
-
+import net.minecraft.recipe.ServerRecipeManager;
+import net.minecraft.registry.RegistryWrapper.WrapperLookup;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.world.World;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -29,13 +34,37 @@ import org.slf4j.LoggerFactory;
 
 public class TlaApi {
     public static final Logger LOGGER = LoggerFactory.getLogger("TLA Api");
-    public static ModdingPlatform PLATFORM;
+    public static ModdingPlatform PLATFORM = new ModdingPlatform() {
+        @Override
+        public String getPlatformName() {
+            return "unknown";
+        }
+
+        @Override
+        public <T> List<T> getEntrypoints(String name, Class<T> type) {
+            return List.of();
+        }
+
+        @Override
+        public long getBucketAmount() {
+            return 1000;
+        }
+
+        @Override
+        public void addClientTickListener(Runnable handler) { }
+
+        @Override
+        public RecipeManager getRecipeManager(WrapperLookup registries, ServerRecipeManager recipeManager) {
+            return RecipeManager.of(registries);
+        }
+    };
 
     public static final String DEFAULT_NAMESPACE = "tla-api";
 
     private static final Map<RecipeViewer, Bootsrap> VIEWER_REGISTRY = new HashMap<>();
 
-    public static final AtomicReference<MinecraftServer> SERVER = new AtomicReference<>(null);
+    private static final AtomicReference<MinecraftServer> SERVER = new AtomicReference<>(null);
+    public static final List<Consumer<MinecraftServer>> SERVER_AVAILABLE_CALLBACKS = new ArrayList<>();
     public static Supplier<World> WORLD = () -> Objects.requireNonNull(SERVER.get()).getOverworld();
 
     public static Identifier id(String path) {
@@ -54,6 +83,11 @@ public class TlaApi {
     public static World getWorld() {
         var server = SERVER.get();
         return server != null ? server.getOverworld() : WORLD.get();
+    }
+
+    public static void onServerLoaded(MinecraftServer server) {
+        SERVER.set(server);
+        SERVER_AVAILABLE_CALLBACKS.forEach(c -> c.accept(server));
     }
 
     public static <C extends PluginContext> C loadPlugins(RecipeViewer viewer, BootstrapFunction<C> implementation) {

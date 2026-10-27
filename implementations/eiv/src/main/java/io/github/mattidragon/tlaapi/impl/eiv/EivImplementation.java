@@ -116,7 +116,7 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
     private final Map<Identifier, TlaEivRecipeViewType> categories = new HashMap<>();
     private final Map<Identifier, BuiltInCategory> builtInCategories = new HashMap<>();
     private final List<Function<RecipeManager, Stream<TlaRecipe>>> serverRecipeGenerators = new ArrayList<>();
-    private final List<Pair<Serializer<?>, Function<?, Stream<TlaRecipe>>>> typedServerRecipeGenerators = new ArrayList<>();
+    private final List<Pair<Serializer<?>, StreamedRecipeGenerator<?, ?>>> typedServerRecipeGenerators = new ArrayList<>();
 
     private final List<ExclusionZone<?>> exclusionZones = new ArrayList<>();
     private Set<BlockingGuiComponent> activeBlockingGuiComponents = Set.of();
@@ -136,7 +136,7 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
         ItemView.addReloadCallback(EivImplementation::onReload);
         ItemView.registerRecipeWrapper(TlaEivRecipe.TYPE, TlaEivRecipe::getRecipeViews);
         if (firstRun) {
-            ModdingPlatform.getInstance().registerClientTickHandler(() -> INSTANCE.onClientTick());
+            ModdingPlatform.getInstance().addClientTickListener(() -> INSTANCE.onClientTick());
         }
     }
 
@@ -269,16 +269,16 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
     }
 
     @Override
-    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
+    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(Serializer<T> type, StreamedRecipeGenerator<I, T> generator) {
         typedServerRecipeGenerators.add(new Pair<>(type, generator));
     }
 
     private Stream<TlaRecipe> provideTypedServerRecipes(RecipeManager recipeManager) {
         return recipeManager.values()
-                .flatMap(recipe -> recipe.value().getDisplays().stream())
-                .flatMap(display -> typedServerRecipeGenerators.stream()
+                .flatMap(recipe -> recipe.value().getDisplays().stream()
+                        .flatMap(display -> typedServerRecipeGenerators.stream()
                             .filter(generator -> generator.getFirst() == display.serializer())
-                            .map(generator -> (TlaRecipe)generator.getSecond().apply(Untyped.cast(display))));
+                            .map(generator -> (TlaRecipe)generator.getSecond().apply(recipe.id(), Untyped.cast(display)))));
     }
 
     private void provideServerRecipes(List<IEivServerRecipe> output) {

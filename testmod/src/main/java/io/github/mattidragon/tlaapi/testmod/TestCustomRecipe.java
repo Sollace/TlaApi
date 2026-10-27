@@ -8,12 +8,14 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStack;
 import net.minecraft.item.Items;
 import net.minecraft.recipe.Recipe;
 import net.minecraft.registry.RegistryKey;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.util.Identifier;
 
+import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 public class TestCustomRecipe implements TlaRecipe {
+    private static final RegistryKey<Recipe<?>> ID = RegistryKey.of(RegistryKeys.RECIPE, Identifier.of("testmod", "test_custom"));
     @Override
     public @NotNull TlaRecipeSerializer<?> getSerializer() {
         return TestPlugin.TEST_CUSTOM_SERIALIZER;
@@ -25,8 +27,8 @@ public class TestCustomRecipe implements TlaRecipe {
     }
 
     @Override
-    public @Nullable RegistryKey<Recipe<?>> getId() {
-        return null;
+    public RegistryKey<Recipe<?>> getId() {
+        return ID;
     }
 
     @Override

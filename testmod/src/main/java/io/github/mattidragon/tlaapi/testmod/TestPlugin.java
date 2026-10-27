@@ -16,6 +16,7 @@ import net.minecraft.util.Identifier;
 import java.util.stream.Stream;
 
 import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public class TestPlugin implements TlaApiPlugin {
     public static final TestCategory TEST_CATEGORY = new TestCategory();
@@ -24,8 +25,15 @@ public class TestPlugin implements TlaApiPlugin {
     public static final TlaRecipeSerializer<TestCustomRecipe> TEST_CUSTOM_SERIALIZER = TlaRecipeSerializer.register(Identifier.of("tla_test", "custom_recipe"), MapCodec.unit(TestCustomRecipe::new), PacketCodec.unit(new TestCustomRecipe()));
     public static final TlaRecipeSerializer<ProgressBarTestRecipe> TEST_PROGRESS_BAR_SERIALIZER = TlaRecipeSerializer.register(Identifier.of("tla_test", "progress_bar"), MapCodec.unit(ProgressBarTestRecipe::new), PacketCodec.unit(new ProgressBarTestRecipe()));
     public static final TlaRecipeSerializer<TestTlaRecipe> TEST_TLA_RECIPE_SERIALIZER = TlaRecipeSerializer.register(Identifier.of("tla_test", "tla_recipe"),
-            TestMod.RECIPE_DISPLAY_SERIALIZER.codec().xmap(TestTlaRecipe::new, TestTlaRecipe::recipe),
-            TestMod.RECIPE_DISPLAY_SERIALIZER.streamCodec().xmap(TestTlaRecipe::new, TestTlaRecipe::recipe)
+            RecordCodecBuilder.mapCodec(i -> i.group(
+                RegistryKey.createCodec(RegistryKeys.RECIPE).optionalFieldOf("id", null).forGetter(TestTlaRecipe::id),
+                TestMod.RECIPE_DISPLAY_SERIALIZER.codec().fieldOf("recipe").forGetter(TestTlaRecipe::recipe)
+            ).apply(i, TestTlaRecipe::new)),
+            PacketCodec.tuple(
+                RegistryKey.createPacketCodec(RegistryKeys.RECIPE), TestTlaRecipe::id,
+                TestMod.RECIPE_DISPLAY_SERIALIZER.streamCodec(), TestTlaRecipe::recipe,
+                TestTlaRecipe::new
+            )
     );
 
     @Override

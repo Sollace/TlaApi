@@ -33,7 +33,7 @@ public class FabricModdingPlatform implements ModdingPlatform, ModInitializer {
 
     @Override
     public void onInitialize() {
-        ServerLifecycleEvents.SERVER_STARTED.register(TlaApi.SERVER::set);
+        ServerLifecycleEvents.SERVER_STARTED.register(TlaApi::onServerLoaded);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class FabricModdingPlatform implements ModdingPlatform, ModInitializer {
     }
 
     @Override
-    public void registerClientTickHandler(Runnable handler) {
+    public void addClientTickListener(Runnable handler) {
         CLIENT_TICK_HANDLERS.accept(handler);
     }
 

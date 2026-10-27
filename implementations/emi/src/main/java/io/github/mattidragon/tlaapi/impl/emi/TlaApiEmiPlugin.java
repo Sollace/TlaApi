@@ -169,11 +169,11 @@ public class TlaApiEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
+        public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(Serializer<T> type, StreamedRecipeGenerator<I, T> generator) {
             registry.getRecipeManager().values().stream()
-                .flatMap(recipe -> recipe.value().getDisplays().stream())
-                .filter(display -> type == display.serializer())
-                .flatMap(display -> generator.apply(Untyped.cast(display)))
+                .flatMap(recipe -> recipe.value().getDisplays().stream()
+                    .filter(display -> type == display.serializer())
+                    .flatMap(display -> generator.apply(recipe.id(), Untyped.cast(display))))
                 .map(tlaRecipe -> new TlaEmiRecipe(tlaRecipe, getEmiCategory(tlaRecipe.getCategory())))
                 .forEach(registry::addRecipe);
         }

@@ -159,7 +159,7 @@ public class ReiImplementation implements PluginContext {
                     .filterType(type)
                     .fillMultiple((display, id) -> {
                         return generators.stream()
-                                .flatMap(g -> g.generator().apply(display))
+                                .flatMap(g -> g.generator().apply(null, display))
                                 .map(TlaDisplay::of).toList();
                     });
                 });
@@ -168,7 +168,7 @@ public class ReiImplementation implements PluginContext {
                     .fillMultiple(entry -> {
                 return ((List<RecipeDisplay>)entry.value().getDisplays()).stream()
                         .filter(display -> groupedGenerators.containsKey(display.serializer()))
-                        .flatMap(display -> groupedGenerators.get(display.serializer()).stream().flatMap(g -> g.generator().apply(display)))
+                        .flatMap(display -> groupedGenerators.get(display.serializer()).stream().flatMap(g -> g.generator().apply(Untyped.cast(entry.id()), display)))
                         .map(TlaDisplay::of)
                         .toList();
             });
@@ -242,7 +242,7 @@ public class ReiImplementation implements PluginContext {
     }
 
     @Override
-    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {
+    public <I extends RecipeInput, T extends RecipeDisplay> void addRecipeMultiGenerator(RecipeDisplay.Serializer<T> type, StreamedRecipeGenerator<I, T> generator) {
         recipeGenerators.add(new RecipeGenerator<>(type, generator));
     }
 
@@ -282,7 +282,7 @@ public class ReiImplementation implements PluginContext {
     }
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
-    public record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, Function<T, Stream<TlaRecipe>> generator) {}
+    public record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, StreamedRecipeGenerator<?, T> generator) {}
     public record WrappedEmiCategory(
             @Nullable BuiltInRecipeCategory type,
             CategoryIdentifier<?> id,

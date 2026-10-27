@@ -1,7 +1,9 @@
 package io.github.mattidragon.tlaapi.impl.jei;
 
+import io.github.mattidragon.tlaapi.api.plugin.ModdingPlatform;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeManager;
 import io.github.mattidragon.tlaapi.api.recipe.TlaCategory;
+import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -10,7 +12,6 @@ import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.gui.handlers.IGuiProperties;
 import mezz.jei.api.helpers.IJeiHelpers;
-import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.ITypedIngredient;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
@@ -22,11 +23,11 @@ import mezz.jei.api.registration.IRecipeTransferRegistration;
 import mezz.jei.api.registration.IRuntimeRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.api.runtime.IJeiRuntime;
-import mezz.jei.api.runtime.IIngredientManager.IIngredientListener;
 import mezz.jei.common.Internal;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.Rect2i;
+import net.minecraft.recipe.PreparedRecipes;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 
@@ -40,6 +41,19 @@ public class TlaApiJeiPlugin implements IModPlugin {
     private final Untyped.Resettable<TlaApiJeiPluginContext> context = Untyped.memoize(TlaApiJeiPluginContext::new);
 
     static IJeiHelpers JEI_HELPERS;
+
+    static {
+        ModdingPlatform.getInstance().addServerAvailableListener(server -> {
+            PreparedRecipes clientSyncedRecipes = Internal.getClientSyncedRecipes();
+            if (clientSyncedRecipes.recipes().isEmpty()) {
+                if (server != null) {
+                    Internal.setClientSyncedRecipes(PreparedRecipes.of(server.getRecipeManager().values()));
+                } else {
+                    TlaApi.LOGGER.info("Server not available to populate JEI's recipes cache :'(");
+                }
+            }
+        });
+    }
 
     @Override
     public Identifier getPluginUid() {
@@ -211,20 +225,13 @@ public class TlaApiJeiPlugin implements IModPlugin {
     @Override
     public void onRuntimeAvailable(IJeiRuntime runtime) {
         var manager = runtime.getIngredientManager();
-        manager.registerIngredientListener(new IIngredientListener() {
-            @Override
-            public <V> void onIngredientsAdded(IIngredientHelper<V> ingredientHelper, Collection<ITypedIngredient<V>> ingredients) {
-                var hidden = ingredients.stream().filter(ingredient -> {
-                    return !context.get().shouldDisplayIngredient(JeiUtils.convertStack(runtime.getJeiHelpers().getPlatformFluidHelper(), ingredient));
-                }).collect(Collectors.groupingBy(ITypedIngredient::getType, Collectors.mapping(ITypedIngredient::getIngredient, Collectors.toList())));
-                if (!hidden.isEmpty()) {
-                    hidden.forEach(manager::removeIngredientsAtRuntime);
-                }
-            }
-
-            @Override
-            public <V> void onIngredientsRemoved(IIngredientHelper<V> ingredientHelper, Collection<ITypedIngredient<V>> ingredients) {}
-        });
+        manager.getRegisteredIngredientTypes().stream().map(type -> {
+            var hidden = manager.getAllIngredients(type).stream().filter(ingredient -> {
+                var typed = runtime.getIngredientManager().createTypedIngredient(Untyped.cast(type), ingredient, false).orElse(null);
+                return typed != null && !context.get().shouldDisplayIngredient(JeiUtils.convertStack(runtime.getJeiHelpers().getPlatformFluidHelper(), typed));
+            }).toList();
+            return hidden.isEmpty() ? null : Map.entry(type, hidden);
+        }).filter(Objects::nonNull).forEach(entry -> manager.removeIngredientsAtRuntime(Untyped.cast(entry.getKey()), entry.getValue()));
     }
 
     @Override
@@ -234,7 +241,14 @@ public class TlaApiJeiPlugin implements IModPlugin {
         recipeManager.createRecipeCategoryLookup().get().forEach(category -> {
             recipeManager.hideRecipes(category.getRecipeType(), Untyped.cast(recipeManager.createRecipeLookup(category.getRecipeType())
                     .get()
-                    .filter(recipe -> !context.shouldDisplayRecipe(context.convertRecipe(Untyped.cast(category), recipe, registration.getJeiHelpers().getPlatformFluidHelper(), recipeManager))).toList()));
+                    .filter(recipe -> {
+                        var convertedRecipe = context.convertRecipe(Untyped.cast(category), recipe, registration.getJeiHelpers().getPlatformFluidHelper(), recipeManager);
+                        var result = !context.shouldDisplayRecipe(convertedRecipe);
+                        if (result) {
+                            TlaApi.LOGGER.debug("Hiding recipe: " + convertedRecipe.getId());
+                        }
+                        return result;
+                    }).toList()));
         });
     }
 }
