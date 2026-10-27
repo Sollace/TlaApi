@@ -7,8 +7,10 @@ import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.Comparison;
 import dev.emi.emi.api.recipe.VanillaEmiRecipeCategories;
+import dev.emi.emi.api.recipe.handler.StandardRecipeHandler;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.widget.Bounds;
+import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
@@ -38,9 +40,13 @@ import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -274,6 +280,36 @@ public class TlaApiEmiPlugin implements EmiPlugin {
                 for (var tlaBounds : provider.apply(screen)) {
                     var bounds = new Bounds(tlaBounds.x(), tlaBounds.y(), tlaBounds.width(), tlaBounds.height());
                     consumer.accept(bounds);
+                }
+            });
+        }
+
+        @Override
+        public <C extends ScreenHandler> void addPlacementHandler(ScreenHandlerType<C> screenType, TlaCategory category, RecipePlacementHandler<C> placementHandler) {
+            registry.addRecipeHandler(screenType, new StandardRecipeHandler<>() {
+                @Override
+                public @Nullable Slot getOutputSlot(C screen) {
+                    return placementHandler.getOutputSlot(screen);
+                }
+
+                @Override
+                public boolean supportsRecipe(EmiRecipe recipe) {
+                    return placementHandler.isApplicable(category, recipeOf(recipe));
+                }
+
+                @Override
+                public List<Slot> getInputSources(C screen) {
+                    return placementHandler.getInputSlots(screen).toList();
+                }
+
+                @Override
+                public List<Slot> getCraftingSlots(C screen) {
+                    return placementHandler.getCraftingSlots(screen).toList();
+                }
+
+                @Override
+                public List<Slot> getCraftingSlots(EmiRecipe recipe, C screen) {
+                    return placementHandler.getCraftingSlots(recipeOf(recipe), screen).toList();
                 }
             });
         }

@@ -14,7 +14,6 @@ import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.screen.ScreenHandler;
-
 import java.util.*;
 import java.util.function.Function;
 

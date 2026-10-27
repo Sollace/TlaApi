@@ -4,6 +4,7 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
+import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
@@ -30,6 +31,7 @@ import mezz.jei.api.recipe.category.IRecipeCategory;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import mezz.jei.common.platform.IPlatformFluidHelperInternal;
+import mezz.jei.library.runtime.JeiHelpers;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.fluid.Fluid;
@@ -40,6 +42,7 @@ import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
 import java.util.*;
 import java.util.function.Consumer;
@@ -60,6 +63,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     final List<ScreenSizeProvider<?>> sizeProviders = new ArrayList<>();
     final List<ExclusionZoneProvider<?>> exclusionZoneProviders = new ArrayList<>();
     final List<Consumer<ISubtypeRegistration>> subTypeProviders = new ArrayList<>();
+    final List<TransferHandler<?, ?>> transferHandlers = new ArrayList<>();
 
     private Predicate<TlaStack> stackHideFilter = Predicates.alwaysFalse();
     private Predicate<TlaRecipe> recipeHideFilter = Predicates.alwaysFalse();
@@ -145,9 +149,24 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
         );
     }
 
+    public IRecipeCategory<?> lookupCategory(TlaCategory category, JeiHelpers helpers) {
+        var jeiCategory = preparedCategories.get(category);
+
+        if (jeiCategory != null) {
+            return jeiCategory;
+        }
+
+        helpers.getRecipeType(category.getId());
+        return null;
+    }
+
     @Override
     public Optional<TlaCategory> getVanillaCategory(BuiltInRecipeCategory type) {
-        return Optional.ofNullable(switch (type) {
+        return Optional.ofNullable(getRecipeType(type)).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(type, jeiCategory, id, type.getSize())));
+    }
+
+    private @Nullable IRecipeType<?> getRecipeType(BuiltInRecipeCategory type) {
+        return switch (type) {
             case CRAFTING_SHAPELESS, CRAFTING_SHAPED -> RecipeTypes.CRAFTING;
             case SMELTING -> RecipeTypes.SMELTING;
             case BLASTING -> RecipeTypes.BLASTING;
@@ -169,7 +188,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
             case SMOKING_FUEL -> RecipeTypes.SMOKING_FUEL;
             case COMPOSTING -> RecipeTypes.COMPOSTING;
             case INFO -> RecipeTypes.INFORMATION;
-        }).map(jeiCategory -> builtInCategories.computeIfAbsent(jeiCategory.getUid(), id -> new BuiltInTlaCategory(type, jeiCategory, id, type.getSize())));
+        };
     }
 
     @Override
@@ -236,6 +255,11 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     }
 
     @Override
+    public <C extends ScreenHandler> void addPlacementHandler(ScreenHandlerType<C> screenType, TlaCategory category, RecipePlacementHandler<C> placementHandler) {
+        transferHandlers.add(new TransferHandler<>(screenType, category, placementHandler));
+    }
+
+    @Override
     public Comparisons<ItemConvertible> getItemComparisons() {
         return itemComparisons;
     }
@@ -273,6 +297,7 @@ class TlaApiJeiPluginContext implements PluginContext, ClientPluginContextBacken
     record GhostHandler<T extends Screen>(Class<T> clazz, StackDragHandler<T> handler) {}
     record ScreenSizeProvider<T extends Screen>(Class<T> clazz, Function<T, TlaBounds> provider) {}
     record ExclusionZoneProvider<T extends HandledScreen<?>>(Class<T> clazz, Function<T, ? extends Iterable<TlaBounds>> provider) {}
+    record TransferHandler<C extends ScreenHandler, T extends HandledScreen<C>>(ScreenHandlerType<C> type, TlaCategory category, RecipePlacementHandler<C> placementHandler) {}
     record BuiltInTlaCategory(BuiltInRecipeCategory category, IRecipeType<?> type, Identifier id, int[] size) implements TlaCategory, RecipeViewerOwned {
         static final CategoryIcon ICON = CategoryIcon.stack(TlaStack.empty());
 

@@ -13,7 +13,9 @@ import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.gui.handlers.IGuiProperties;
 import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.ingredients.ITypedIngredient;
+import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import mezz.jei.api.recipe.transfer.IRecipeTransferInfo;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -28,6 +30,9 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.util.math.Rect2i;
 import net.minecraft.recipe.PreparedRecipes;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 
@@ -35,6 +40,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import org.jetbrains.annotations.Nullable;
 
 @JeiPlugin
 public class TlaApiJeiPlugin implements IModPlugin {
@@ -55,6 +62,14 @@ public class TlaApiJeiPlugin implements IModPlugin {
         });
     }
 
+    @Nullable
+    private IJeiRuntime runtime;
+
+    @Nullable
+    private IRecipeManager getRecipeManager() {
+        return runtime == null ? null : runtime.getRecipeManager();
+    }
+
     @Override
     public Identifier getPluginUid() {
         return Identifier.of("tla-api", "plugin");
@@ -62,6 +77,7 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
     @Override
     public void onRuntimeUnavailable() {
+        runtime = null;
         context.reset();
     }
 
@@ -219,11 +235,55 @@ public class TlaApiJeiPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeTransferHandlers(IRecipeTransferRegistration registration) {
-        // TODO: Transfer handlers (control the transfer of items into the crafting ui)
+        var context = this.context.get();
+        context.transferHandlers.forEach(handler -> {
+            registration.getJeiHelpers().getRecipeType(handler.category().getId()).ifPresentOrElse(type -> {
+                registration.addRecipeTransferHandler(new IRecipeTransferInfo<>() {
+                    @Override
+                    public Class<? extends ScreenHandler> getContainerClass() {
+                        return Untyped.cast(ScreenHandler.class);
+                    }
+
+                    @Override
+                    public Optional<ScreenHandlerType<ScreenHandler>> getMenuType() {
+                        return Optional.of(Untyped.cast(handler.type()));
+                    }
+
+                    @Override
+                    public IRecipeType<Object> getRecipeType() {
+                        return Untyped.cast(type);
+                    }
+
+                    @Override
+                    public boolean canHandle(ScreenHandler container, Object recipe) {
+                        var recipeManager = getRecipeManager();
+                        return recipeManager != null && container.getType() == handler.type()
+                            && handler.placementHandler().isApplicable(
+                                    handler.category(),
+                                    context.convertRecipe(
+                                            Untyped.cast(recipeManager.getRecipeCategory(type)), recipe,
+                                            registration.getJeiHelpers().getPlatformFluidHelper(), recipeManager
+                                    ));
+                    }
+
+                    @Override
+                    public List<Slot> getRecipeSlots(ScreenHandler container, Object recipe) {
+                        return handler.placementHandler().getCraftingSlots(Untyped.cast(container)).toList();
+                    }
+
+                    @Override
+                    public List<Slot> getInventorySlots(ScreenHandler container, Object recipe) {
+                        return handler.placementHandler().getInputSlots(Untyped.cast(container)).toList();
+                    }
+                });
+            }, () -> TlaApi.LOGGER.error("Cannot register placement handler for unknown recipe category {}", handler.category().getId()));
+
+        });
     }
 
     @Override
     public void onRuntimeAvailable(IJeiRuntime runtime) {
+        this.runtime = runtime;
         var manager = runtime.getIngredientManager();
         manager.getRegisteredIngredientTypes().stream().map(type -> {
             var hidden = manager.getAllIngredients(type).stream().filter(ingredient -> {

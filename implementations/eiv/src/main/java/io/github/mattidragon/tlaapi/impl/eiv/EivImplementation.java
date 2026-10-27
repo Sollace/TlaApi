@@ -40,6 +40,7 @@ import de.crafty.eiv.common.recipe.ItemViewRecipes;
 import de.crafty.eiv.common.recipe.ItemViewRecipes.ServerRecipeProvider;
 import de.crafty.eiv.common.recipe.inventory.SlotContent;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
+import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.client.StackDragHandler;
 import io.github.mattidragon.tlaapi.api.client.gui.TlaBounds;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginContextBackend;
@@ -66,6 +67,8 @@ import net.minecraft.item.ItemConvertible;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.display.RecipeDisplay.Serializer;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
 
 public class EivImplementation implements PluginContext, ClientPluginContextBackend {
@@ -194,6 +197,7 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
         exclusionZones.add(new ExclusionZone<>(EXCLUSION_ZONE_ID.withSuffixedPath("/" + exclusionZones.size()), clazz, provider::apply));
     }
 
+    @Nullable
     public IEivRecipeViewType lookupCategory(Identifier id) {
         var eivCategory = categories.get(id);
         if (eivCategory != null) {
@@ -221,6 +225,7 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
         return new BuiltInCategory(BuiltInRecipeCategory.INFO, category);
     }
 
+    @Nullable
     public IEivRecipeViewType lookupCategory(TlaCategory category) {
         if (category instanceof BuiltInCategory builtIn) {
             return builtIn.viewType();
@@ -338,6 +343,13 @@ public class EivImplementation implements PluginContext, ClientPluginContextBack
                         .toList()
             ));
         });
+    }
+
+    @Override
+    public <C extends ScreenHandler> void addPlacementHandler(ScreenHandlerType<C> screenType, TlaCategory category, RecipePlacementHandler<C> placementHandler) {
+        if (lookupCategory(category) instanceof TlaEivRecipeViewType viewType) {
+            viewType.placementHandlers.put(screenType, placementHandler);
+        }
     }
 
     @Override

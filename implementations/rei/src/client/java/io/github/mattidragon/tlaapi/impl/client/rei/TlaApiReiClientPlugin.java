@@ -4,6 +4,7 @@ import dev.architectury.event.EventResult;
 import io.github.mattidragon.tlaapi.api.client.plugin.ClientPluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
 import io.github.mattidragon.tlaapi.api.plugin.RecipeViewer;
+import io.github.mattidragon.tlaapi.impl.client.rei.util.ReiPlacementHandler;
 import io.github.mattidragon.tlaapi.impl.rei.ReiImplementation;
 import io.github.mattidragon.tlaapi.impl.rei.ReiTlaRecipe;
 import io.github.mattidragon.tlaapi.impl.rei.ReiUtil;
@@ -13,6 +14,7 @@ import me.shedaniel.rei.api.client.registry.display.DisplayRegistry;
 import me.shedaniel.rei.api.client.registry.entry.EntryRegistry;
 import me.shedaniel.rei.api.client.registry.screen.ExclusionZones;
 import me.shedaniel.rei.api.client.registry.screen.ScreenRegistry;
+import me.shedaniel.rei.api.client.registry.transfer.TransferHandlerRegistry;
 import me.shedaniel.rei.api.common.plugins.PluginManager;
 import me.shedaniel.rei.api.common.registry.ReloadStage;
 
@@ -62,5 +64,10 @@ public class TlaApiReiClientPlugin implements REIClientPlugin {
         ReiClientImplementation.INSTANCE.stackDragHandlers.forEach(registry::registerDraggableStackVisitor);
         ReiClientImplementation.INSTANCE.screenSizeProviders.forEach(registry::registerDecider);
         ReiClientImplementation.INSTANCE.clickAreas.forEach(tuple -> tuple.register(registry));
+    }
+
+    @Override
+    public void registerTransferHandlers(TransferHandlerRegistry registry) {
+        ReiImplementation.INSTANCE.placementHandlers.forEach(handler -> registry.register(new ReiPlacementHandler<>(handler)));
     }
 }

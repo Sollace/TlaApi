@@ -8,6 +8,7 @@ import com.google.common.collect.Multimap;
 
 import dev.architectury.fluid.FluidStack;
 import io.github.mattidragon.tlaapi.api.BuiltInRecipeCategory;
+import io.github.mattidragon.tlaapi.api.client.RecipePlacementHandler;
 import io.github.mattidragon.tlaapi.api.plugin.Comparisons;
 import io.github.mattidragon.tlaapi.api.plugin.PluginContext;
 import io.github.mattidragon.tlaapi.api.plugin.PluginLoader;
@@ -23,7 +24,6 @@ import io.github.mattidragon.tlaapi.api.recipe.TlaStackComparison;
 import io.github.mattidragon.tlaapi.impl.BuiltInCategoryRegistry;
 import io.github.mattidragon.tlaapi.impl.TlaApi;
 import io.github.mattidragon.tlaapi.impl.Untyped;
-
 import me.shedaniel.rei.api.client.registry.display.DisplayCategory;
 import me.shedaniel.rei.api.common.entry.comparison.EntryComparator;
 import me.shedaniel.rei.api.common.entry.comparison.FluidComparatorRegistry;
@@ -39,6 +39,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.display.RecipeDisplay;
 import net.minecraft.recipe.input.RecipeInput;
+import net.minecraft.screen.ScreenHandler;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -102,6 +104,7 @@ public class ReiImplementation implements PluginContext {
     private final List<Function<RecipeManager, Stream<TlaRecipe>>> customGenerators = new ArrayList<>();
     private final List<Comparator<Item, ItemStack>> itemComparators = new ArrayList<>();
     private final List<Comparator<Fluid, FluidStack>> fluidComparators = new ArrayList<>();
+    public final List<PlacementHandler<?>> placementHandlers = new ArrayList<>();
 
     public Predicate<TlaStack> hidePredicate = Predicates.alwaysFalse();
     public Predicate<TlaRecipe> recipeHidePredicate = Predicates.alwaysFalse();
@@ -262,6 +265,11 @@ public class ReiImplementation implements PluginContext {
     }
 
     @Override
+    public <C extends ScreenHandler> void addPlacementHandler(ScreenHandlerType<C> screenType, TlaCategory category, RecipePlacementHandler<C> placementHandler) {
+        placementHandlers.add(new PlacementHandler<>(screenType, category, placementHandler));
+    }
+
+    @Override
     public Comparisons<ItemConvertible> getItemComparisons() {
         return itemComparisons;
     }
@@ -283,6 +291,7 @@ public class ReiImplementation implements PluginContext {
 
     private record Comparator<T, S>(T key, EntryComparator<S> comparator) {}
     public record RecipeGenerator<T extends RecipeDisplay>(RecipeDisplay.Serializer<T> type, StreamedRecipeGenerator<?, T> generator) {}
+    public record PlacementHandler<C extends ScreenHandler>(ScreenHandlerType<C> screenType, TlaCategory category, RecipePlacementHandler<C> placementHandler) {}
     public record WrappedEmiCategory(
             @Nullable BuiltInRecipeCategory type,
             CategoryIdentifier<?> id,
